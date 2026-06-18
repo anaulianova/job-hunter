@@ -1,0 +1,86 @@
+# job-hunter target companies — EXAMPLE FILE
+#
+# Copy this file to config/targets.yml and customise it for your search,
+# or run /targets in Claude Code to generate a personalised version from your profile.
+#
+# ATS types:
+#   greenhouse  — public Greenhouse API, fetched automatically
+#   lever       — public Lever board, fetched automatically
+#   ashby       — public Ashby board, fetched automatically
+#   manual      — private board, login-walled, or unsupported ATS; check career_url directly
+
+# Title keywords that disqualify a role regardless of keyword match
+exclude_title_keywords:
+  - Staff
+  - Principal
+  - Lead
+  - Director
+  - Head of
+  - "VP "
+  - Senior Manager
+  - Intern
+  - PhD
+  - Recruiter
+
+# Keywords used to filter roles from each company's listings
+# Edit to match your target roles
+role_keywords:
+  - data scientist
+  - data analyst
+  - research analyst
+  - analytics
+  - applied scientist
+  - product analyst
+
+# Locations to include (case-insensitive match)
+# Add or remove to match your search parameters
+locations:
+  - San Francisco
+  - New York
+  - London
+  - Remote
+
+companies:
+
+  # ── Example: Greenhouse ATS ────────────────────────────────────────────────
+  # Replace with companies relevant to your search.
+  # Find the Greenhouse slug by visiting: boards.greenhouse.io/{slug}
+
+  - name: Stripe
+    ats: greenhouse
+    api_url: https://boards-api.greenhouse.io/v1/boards/stripe/jobs
+    career_url: https://stripe.com/jobs
+    priority: tier1
+
+  - name: Databricks
+    ats: greenhouse
+    api_url: https://boards-api.greenhouse.io/v1/boards/databricks/jobs
+    career_url: https://www.databricks.com/company/careers
+    priority: tier2
+
+  # ── Example: Lever ATS ────────────────────────────────────────────────────
+
+  - name: Palantir
+    ats: lever
+    lever_slug: palantir
+    career_url: https://www.palantir.com/careers
+    priority: tier2
+
+  # ── Example: Manual (private board or login-walled) ───────────────────────
+  # Set ats: manual for LinkedIn-only postings, private Greenhouse boards,
+  # or any company where the URL requires a login.
+
+  - name: OpenAI
+    ats: manual
+    career_url: https://openai.com/careers
+    priority: tier1
+    note: career page blocks scrapers — check manually or save JD to jds/openai.txt
+
+  - name: Anthropic
+    ats: greenhouse
+    api_url: https://boards-api.greenhouse.io/v1/boards/anthropic/jobs
+    career_url: https://www.anthropic.com/careers
+    priority: tier1
+
+  # Add your own companies below. Run /targets to generate this file
+  # automatically from your profile and role archetypes.

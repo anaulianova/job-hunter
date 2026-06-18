@@ -44,7 +44,8 @@ The more you use it, the better it knows you. Framing decisions you make early, 
         │
         ▼
 Tailor your CV
-  └── Apply amendments, export to PDF via /export. One page, always.
+  └── Apply amendments from the evaluation report. Export to PDF runs
+      automatically during /apply — one page, always.
         │
         ▼
 /apply
@@ -80,12 +81,12 @@ cd job-hunter
 
 **2. Install dependencies**
 ```bash
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 **3. Run the health check**
 ```bash
-python scripts/healthcheck.py
+uv run scripts/healthcheck.py
 ```
 This checks your Python version, all dependencies, your `.env` file, Google credentials, CV, profile, and output directories. It tells you exactly what is missing and how to fix it — run it again after fixing anything until everything passes.
 
@@ -105,7 +106,7 @@ This checks your Python version, all dependencies, your `.env` file, Google cred
 
 Then run:
 ```bash
-python scripts/sheets.py --setup
+uv run scripts/sheets.py --setup
 ```
 This creates all four tabs (Tracker, Pipeline, Job Postings, App Q&A) with headers, dropdowns, and colour coding.
 
@@ -154,7 +155,7 @@ Good for clearing a backlog of saved roles.
 
 LinkedIn lets you export your saved jobs: go to **Settings → Data Privacy → Get a copy of your data**, select Saved Jobs, and download. Then:
 ```bash
-python scripts/linkedin_import.py ~/Downloads/SavedJobs.csv
+uv run scripts/linkedin_import.py ~/Downloads/SavedJobs.csv
 ```
 This imports your entire backlog into the pipeline at once, ready to evaluate.
 

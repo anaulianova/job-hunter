@@ -68,9 +68,13 @@ Key fields used throughout:
 | Command | Mode file | Description |
 |---|---|---|
 | `/onboard` | `modes/onboard.md` | First-time setup and profile building |
+| `/targets` | `modes/targets.md` | Build personalised company target list |
 | `/scan` | `modes/scan.md` | Job discovery via portals or URL input |
 | `/evaluate {url or JD}` | `modes/evaluate.md` | Full 5-point evaluation |
-| `/apply {company}` | `modes/apply.md` | Generate application Q&A + confirm CV + update tracker |
+| `/apply {company}` | `modes/apply.md` | Generate application Q&A + sync to Google Sheets |
+| `/cover {company}` | `modes/coverletter.md` | Cover letter for Tier 1 roles — run after /apply |
+| `/research {company}` | `modes/research.md` | Company brief before application or interview |
+| `/interview {company}` | `modes/interview.md` | Interview prep by stage |
 | `/pipeline` | Display `pipeline/pipeline.json` formatted | Current job pipeline |
 | `/track` | `modes/track.md` | Update Google Sheets tracker |
 
