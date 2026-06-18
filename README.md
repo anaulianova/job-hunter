@@ -2,13 +2,15 @@
 
 ![Built with Claude Code](https://img.shields.io/badge/built%20with-Claude%20Code-blueviolet) ![Python](https://img.shields.io/badge/python-3.10%2B-blue) ![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Human in the loop](https://img.shields.io/badge/human--in--the--loop-always-orange)
 
-Job searching manually is slow, imprecise, and demoralising. job-hunter is an agentic system built on Claude Code that handles the analysis, tailoring, and tracking — so you spend your time on the applications that actually fit. It evaluates every role like a senior recruiter would, rewrites your CV with exact copy you can paste directly, and generates application answers that sound like you.
+Job searching sucks. 
 
-Built by Anastasia Ulianova — data scientist, used on her own job search, built from scratch while actively applying.
+It's slow, imprecise, and demoralising. But it doesn't have to be anymore. job-hunter is an agentic system built on Claude Code that handles the analysis, tailoring, and tracking — so you spend your time on the applications that actually fit. It evaluates every role like a senior recruiter would, rewrites your CV with exact copy, and generates application answers that sound like you.
+
+I battle-tested this system while applying to hundreds of jobs myself. The job market is broken. Doesn't mean we have to break with it.  
 
 > Engineers always get the best tools. This one is for everyone.
 
-*Inspired by [career-ops](https://github.com/santifer/career-ops) by Santiago Ferreira.*
+*This project was inspired by [career-ops](https://github.com/santifer/career-ops) by Santiago Ferreira. Thanks! Without seeing what you built, I wouldn't have thought to formalise my process to share with the world. I hope this can be useful to someone out there as much as it has for me.*
 
 ---
 
