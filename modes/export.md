@@ -23,7 +23,7 @@ Date defaults to today if omitted. The script warns `⚠️ PDF is N pages` if c
 
 1. Run `/evaluate` on a JD — this produces a report in `pipeline/reports/`
 2. Ask Claude to tailor the CV: *"Tailor my CV for [role]"*
-3. Claude applies Point 3 amendments + Point 4 (Airwallex) + Point 5 (About Me)
+3. Claude applies Point 3 amendments + Point 4 (sensitive role decisions) + Point 5 (About Me)
 4. Claude writes the tailored version to `submitted/cv_{company}_{date}.md`
 5. You review and approve
 6. Run the export command above
@@ -118,18 +118,18 @@ One paragraph, max 3 sentences.
 
 ---
 
-## Airwallex Inclusion Rules
+## Sensitive Role Rules
 
-Controlled per role at Point 4 of the evaluation. When **INCLUDE**:
+Sensitive roles are defined in `profile/user_profile.json` → `sensitive_roles`. The include/exclude decision is made at Point 4 of the evaluation and recorded in the evaluation report.
 
+When **INCLUDE**: insert the role using only the `approved_framing` from the profile — never improvise alternative framing.
+
+When **EXCLUDE**: omit the role section entirely. If removing it creates a visible timeline gap, note it so the user can decide whether to address it.
+
+**Format for any included sensitive role:**
 ```markdown
-### Airwallex / t0
-**Manager, Strategy & Operations** | Mar 2026 – May 2026 | San Francisco
-- Assessed integration opportunities for AI-powered workflows across daily operations of an AI-native accounting platform
-- Contributed to GTM positioning and compliance framework evaluation (SOC II)
+### [Company]
+**[Title]** | [Dates] | [Location]
+- [approved_framing line 1]
+- [approved_framing line 2, if defined]
 ```
-
-When **EXCLUDE**: remove the entire Airwallex section.
-
-Include when: AI workflow framing is relevant, B2B SaaS context adds value, cross-functional ops experience is valued.
-Exclude when: pure DS/ML role, London institutional role, short tenure creates noise.
