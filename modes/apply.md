@@ -20,7 +20,7 @@
 
 Check that the tailored CV exists:
 - Look for `tailored/cv_{company-slug}_{date}.md` and `submitted/{company-slug}_{date}.pdf`
-- If found: "CV ready: `submitted/{company-slug}_{date}.pdf` → rename to `CV_Anastasia_Ulianova.pdf` before uploading."
+- If found: "CV ready: `submitted/{company-slug}_{date}.pdf` → rename to `CV_{FirstName}_{LastName}.pdf` before uploading."
 - If not found: "No tailored CV found for this role. Run the CV export first: `uv run scripts/cv_export.py --company {company-slug} --date {date}`"
 
 ---
