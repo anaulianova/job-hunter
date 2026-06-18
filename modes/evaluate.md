@@ -111,28 +111,21 @@ After amendments: "These edits address [X] of the 5 missing keywords. Keywords n
 
 ---
 
-## Point 4 — Airwallex Decision
+## Point 4 — Sensitive Role Decision
 
-Load the Airwallex rule from `profile/user_profile.json` → `sensitive_roles`.
+Load `sensitive_roles` from `profile/user_profile.json`. If the array is empty, output "No sensitive roles defined — skipping Point 4." and move on.
 
-Evaluate against this JD:
-- Is AI workflow framing relevant? [yes/no]
-- Does B2B SaaS context help? [yes/no]
-- Is cross-functional ops experience valued? [yes/no]
-- Is this a pure DS/ML role? [yes/no]
-- Is this London-based institutional? [yes/no]
+For each sensitive role, evaluate its `include_rule` against this specific JD and output INCLUDE or EXCLUDE with one sentence rationale.
 
-**Output:**
+If INCLUDE: use only the `approved_framing` string from the profile entry verbatim — never improvise framing for a sensitive role.
+
+If EXCLUDE: note any resulting gap in the CV timeline and whether it needs addressing.
+
+**Output (one block per sensitive role):**
 ```
-AIRWALLEX: [INCLUDE / EXCLUDE]
+[Company / Role]: [INCLUDE / EXCLUDE]
 RATIONALE: [one sentence]
-```
-
-If INCLUDE, provide the approved framing to use:
-```
-APPROVED FRAMING:
-• Assessed integration opportunities for AI-powered workflows across daily operations of an AI-native accounting platform.
-• [second bullet if relevant, drawn from approved_framing in profile]
+FRAMING: [approved_framing text, if INCLUDE]
 ```
 
 ---
@@ -144,7 +137,7 @@ Write a new About Me paragraph for this specific role.
 Rules:
 - Maximum 3 sentences
 - Lead with the framing most relevant to this JD
-- Never use "political scientist"
+- Never use any term listed in `profile.forbidden_descriptions`
 - Honest and defensible
 
 **Output:**
@@ -171,7 +164,7 @@ Location:       [location]
 Tier:           [1 / 2 / 3]
 Match Score:    [X/100]
 Suitability:    [SUITABLE / STRETCH / UNSUITABLE]
-Airwallex:      [INCLUDE / EXCLUDE]
+Sensitive roles: [INCLUDE / EXCLUDE per role, or "none defined"]
 ══════════════════════════════════════
 Next step: Review CV amendments above, update your CV, then run /track to log this role.
 ```

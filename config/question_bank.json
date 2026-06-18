@@ -10,13 +10,8 @@
         "2": "standard",
         "3": "boilerplate"
       },
-      "boilerplate": {
-        "SF": "My expectations are in the $200–220K range for this level of role in San Francisco. I'm open to discussing based on the full compensation package and scope of the role.",
-        "London": "My expectations are in the £90–110K range for this level of role in London. I'm open to discussing based on the full compensation package and scope of the role.",
-        "NY": "My expectations are in the $200–220K range for this level of role in New York. I'm open to discussing based on the full compensation package and scope of the role.",
-        "default": "My expectations reflect the market rate for this level of role in the relevant geography. I'm open to discussing based on the full compensation package and scope."
-      },
-      "notes": "Anchor at top of realistic range, never the floor. Adjust geography. For senior/staff roles bump upper end. Never volunteer a number below $180K USD / £90K GBP."
+      "boilerplate": "My expectations are in the [market range for role level and geography — load from AGENTS.md Salary Rules]. I'm open to discussing based on the full compensation package and scope of the role.",
+      "notes": "Anchor at the top of the realistic range for the role level and geography (see AGENTS.md Salary Rules). Never anchor at the floor. Never volunteer the salary floor from profile.search_parameters."
     },
     {
       "id": "salary_number",
@@ -26,13 +21,8 @@
         "2": "standard",
         "3": "boilerplate"
       },
-      "boilerplate": {
-        "SF": "220000",
-        "London": "105000",
-        "NY": "220000",
-        "default": "200000"
-      },
-      "notes": "Enter the top of the realistic range for role level and geography. For Tier 1 senior roles in SF, use 220000–240000."
+      "boilerplate": "Enter the top of the realistic market range for the role level and geography. Load the applicable range from AGENTS.md Salary Rules and use the upper bound of that range.",
+      "notes": "For senior IC roles: use the top of the geography range from AGENTS.md. Bump upper end further for staff/principal roles."
     },
     {
       "id": "why_company",
