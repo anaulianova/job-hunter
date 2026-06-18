@@ -1,0 +1,71 @@
+{
+  "version": "1.0",
+  "notes": "Standard application questions. Add new questions as you encounter them. tier_handling values: boilerplate (no generation), standard (light substitution), personalise (full generation from JD), ask_user (prompt user for angle before generating — Tier 1 only).",
+  "questions": [
+    {
+      "id": "salary_narrative",
+      "label": "Salary expectation (free text)",
+      "tier_handling": {
+        "1": "personalise",
+        "2": "standard",
+        "3": "boilerplate"
+      },
+      "boilerplate": {
+        "SF": "My expectations are in the $200–220K range for this level of role in San Francisco. I'm open to discussing based on the full compensation package and scope of the role.",
+        "London": "My expectations are in the £90–110K range for this level of role in London. I'm open to discussing based on the full compensation package and scope of the role.",
+        "NY": "My expectations are in the $200–220K range for this level of role in New York. I'm open to discussing based on the full compensation package and scope of the role.",
+        "default": "My expectations reflect the market rate for this level of role in the relevant geography. I'm open to discussing based on the full compensation package and scope."
+      },
+      "notes": "Anchor at top of realistic range, never the floor. Adjust geography. For senior/staff roles bump upper end. Never volunteer a number below $180K USD / £90K GBP."
+    },
+    {
+      "id": "salary_number",
+      "label": "Salary expectation (number input only)",
+      "tier_handling": {
+        "1": "personalise",
+        "2": "standard",
+        "3": "boilerplate"
+      },
+      "boilerplate": {
+        "SF": "220000",
+        "London": "105000",
+        "NY": "220000",
+        "default": "200000"
+      },
+      "notes": "Enter the top of the realistic range for role level and geography. For Tier 1 senior roles in SF, use 220000–240000."
+    },
+    {
+      "id": "why_company",
+      "label": "Why do you want to work here?",
+      "tier_handling": {
+        "1": "ask_user",
+        "2": "personalise",
+        "3": "standard"
+      },
+      "boilerplate": null,
+      "notes": "Must reference something specific to the company — product, mission, a recent decision, a specific team. Never generic ('fast-growing company', 'exciting space'). 3–4 sentences max. For Tier 1: ask the user what angle they want before generating."
+    },
+    {
+      "id": "note_to_hiring_manager",
+      "label": "Note to hiring manager",
+      "tier_handling": {
+        "1": "ask_user",
+        "2": "personalise",
+        "3": "standard"
+      },
+      "boilerplate": null,
+      "notes": "2–3 sentences. Not a cover letter, not a CV summary. Lead with the specific fit between the user's background and this role's core problem. Tone: direct, confident, concise. For Tier 1: ask user for their angle first."
+    },
+    {
+      "id": "additional_info",
+      "label": "Anything additional you'd like to share about your application?",
+      "tier_handling": {
+        "1": "personalise",
+        "2": "standard",
+        "3": "boilerplate"
+      },
+      "boilerplate": "",
+      "notes": "Default: leave blank. Only use if there is genuinely something relevant not captured elsewhere — e.g. a portfolio link, a specific project, a timing note. Never pad."
+    }
+  ]
+}
