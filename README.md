@@ -233,12 +233,9 @@ job-hunter is a local, open-source tool. Your CV and personal data never leave y
 
 ## About
 
-I built this during an active job search because I was frustrated with how manual and imprecise the process was — every application felt like starting from scratch. I am a data scientist with a background in fintech, crypto markets, and AI systems, and I built this the same way I approach any problem: by making it a system. The full case study on how I built it, what worked, and what I would do differently is on [Medium](https://anastasiaulianova.medium.com/).
+I built this system while actively job searching. I've been so frustrated with the job market and how much time it takes to tailor every application just to try to stand out in a time when the competition is huge. And also, no way do I want to pay for the random tools being advertised when I can just build my own. Sorry to all those businesses, but I'm not forking up money unless there is a guaranteed result. 
+I am a data scientist with a background mostly in fintech, but I just love working on different projects and building systems to save time. 
 
-If you use job-hunter and it helps you land something — I want to hear about it. Open an issue, tag me, or just send a note. That kind of feedback is what keeps a project like this worth maintaining.
+I hope that by using job-hunter, it helps you land something and eases the strain of the job-searching mill. If it does, I'd love to hear about it! Open an issue, tga me or send me a note. Also if you have any suggestions to improve this system.
 
-**Good luck.**
-
----
-
-*Got hired using job-hunter? [Share your story](https://github.com/anaulianova/job-hunter/issues/new?title=Got+hired!&labels=success-story) — it helps others find the project and helps me know what's working.*
+**Good luck, my fellow job seekers!! The hunt is on..**
