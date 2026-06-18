@@ -8,6 +8,8 @@ Built by Anastasia Ulianova — data scientist, used on her own job search, buil
 
 > Engineers always get the best tools. This one is for everyone.
 
+*Inspired by [career-ops](https://github.com/santifer/career-ops) by Santiago Ferreira.*
+
 ---
 
 ## What job-hunter does
