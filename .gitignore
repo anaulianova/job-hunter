@@ -1,0 +1,34 @@
+# job-hunter: personal data — never commit
+cv.md
+profile/user_profile.json
+config/google_creds.json
+pipeline/pipeline.json
+pipeline/scan_log.json
+pipeline/reports/
+
+# Claude Code internal
+.claude/
+
+# job-hunter: generated output — never commit
+submitted/
+tailored/
+jds/
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# macOS / editors
+.DS_Store
+.vscode/
+.idea/
+*.swp
