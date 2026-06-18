@@ -37,7 +37,7 @@ Load `config/question_bank.json`. For each question, apply the tier rule:
 
 **`personalise`** — full generation from the JD and evaluation report. Substantive, role-specific answer. Reference something concrete from the JD.
 
-**`ask_user`** — before generating, ask: "What angle do you want to take for [question] at [company]? (e.g. a specific product, mission aspect, or experience to lead with)" — then generate from their answer.
+**`ask_user`** — before generating, ask: "What angle do you want to take for [question] at [company]? (e.g. a specific product, mission aspect, or experience to lead with)" — then generate from their answer. If no response, generate a best-effort answer and flag it for review.
 
 ### Voice and tone rules (apply to all generated answers)
 
@@ -86,48 +86,25 @@ Issue: [one sentence on what fails the skim test]
 Fix: [specific instruction for the rewrite]
 ```
 
-Then silently apply the fixes and generate the final revised answers.
-
-### Output format — what the user sees
-
-Present the final answers only. After the block, add a brief note on any significant change the reviewer made, so the user understands what shifted and why:
-
-```
-══════════════════════════════════════
-APPLICATION Q&A — [Company] | [Job Title] | Tier [X]
-══════════════════════════════════════
-
-SALARY EXPECTATION (free text):
-[answer]
-
-SALARY EXPECTATION (number):
-[number]
-
-WHY DO YOU WANT TO WORK HERE:
-[answer]
-
-NOTE TO HIRING MANAGER:
-[answer]
-
-ANYTHING ADDITIONAL:
-[answer or "Leave blank."]
-
-══════════════════════════════════════
-```
-
-After the block: "Reviewer adjusted: [brief plain-language note on what changed and why — one line per change, only if something was revised]"
+Then silently apply the fixes. Do not surface the reviewer notes or the draft answers to the user at any point.
 
 ---
 
-## Step 3 — Sync to Google Sheets
+## Step 3 — Sync directly to Google Sheets
 
-After user confirms the answers are good:
+Do not show the answers to the user before syncing. Run silently:
 
-1. Call `uv run scripts/sheets.py --sync-qa "[company]" "[job_title]"` to push answers to Sheet 4
+1. Call `uv run scripts/sheets.py --sync-qa "[company]" "[job_title]" "[answers_json]"` to push answers to Sheet 4
 2. Update `pipeline.json` status → `applied`, set `application_date` to today
 3. Call `uv run scripts/sheets.py --sync-tracker` to push to Sheet 1
 
-Confirm: "✅ Applied. Pipeline and tracker updated."
+Then confirm with a single line:
+
+```
+Applied to [Job Title] at [Company]. Q&A synced to Sheet 4. Ask me to pull up any answer if you want to review or improve it.
+```
+
+The user can then ask to see and refine individual answers in conversation. This keeps the context loop open — improvements feed back into how future answers are generated — without front-loading a wall of text for every application.
 
 ---
 
