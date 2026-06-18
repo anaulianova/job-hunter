@@ -11,9 +11,13 @@ Conversational onboarding → job discovery → recruiter-grade evaluation → C
 
 ```
 /onboard       → First time setup: build your profile and define target roles
+/targets       → Build your company target list (writes config/targets.yml)
 /scan          → Search for new jobs (company portals + URL batch input)
 /evaluate      → Run 5-point evaluation on a JD (paste text or URL or jds/file.txt)
 /apply         → Generate application Q&A answers + confirm CV + update tracker
+/cover         → Write a cover letter (Tier 1 only — run after /apply)
+/research      → Company brief: news, product, culture, conversation hooks
+/interview     → Interview prep: questions, STAR stories, mock Q&A
 /pipeline      → View current job pipeline and statuses
 /track         → Update Google Sheets tracker
 ```
