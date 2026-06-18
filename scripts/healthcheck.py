@@ -1,10 +1,10 @@
 """
-job-hunter: doctor.py
+job-hunter: healthcheck.py
 Health-check script for new users. Verifies the environment is correctly set up
 before running any job-hunter commands.
 
 Usage:
-  uv run scripts/doctor.py
+  uv run scripts/healthcheck.py
 """
 
 import sys

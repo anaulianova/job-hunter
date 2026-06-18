@@ -4,15 +4,21 @@ profile/user_profile.json
 config/google_creds.json
 pipeline/pipeline.json
 pipeline/scan_log.json
-pipeline/reports/
+pipeline/reports/*
+!pipeline/.gitkeep
+!pipeline/reports/.gitkeep
 
 # Claude Code internal
 .claude/
 
 # job-hunter: generated output — never commit
-submitted/
-tailored/
-jds/
+# Ignore contents but keep the folders (via .gitkeep) so they exist after cloning
+submitted/*
+tailored/*
+jds/*
+!submitted/.gitkeep
+!tailored/.gitkeep
+!jds/.gitkeep
 config/targets.yml
 
 # Secrets
