@@ -13,6 +13,7 @@ pipeline/reports/
 submitted/
 tailored/
 jds/
+config/targets.yml
 
 # Secrets
 .env
