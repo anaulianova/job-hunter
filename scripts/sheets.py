@@ -466,7 +466,7 @@ def sync_tracker(sheets):
     sheets.values().append(
         spreadsheetId=SHEET_ID,
         range=f"{TAB_TRACKER}!A1",
-        valueInputOption="RAW",
+        valueInputOption="USER_ENTERED",
         insertDataOption="INSERT_ROWS",
         body={"values": new_rows}
     ).execute()
@@ -494,7 +494,7 @@ def update_tracker_status(sheets, url, new_status):
             sheets.values().update(
                 spreadsheetId=SHEET_ID,
                 range=f"{TAB_TRACKER}!C{row_num}",
-                valueInputOption="RAW",
+                valueInputOption="USER_ENTERED",
                 body={"values": [[new_status]]}
             ).execute()
             print(f"✅ {row[0]} — {row[1]}: status → '{new_status}'")
