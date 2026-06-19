@@ -59,34 +59,31 @@ Load `config/question_bank.json`. For each question, apply the tier rule:
 
 ---
 
-## Step 2b — Reviewer pass (internal, before showing user)
+## Step 2b — Isolated reviewer pass
 
-After drafting all answers, run a reviewer pass before presenting anything. Do not show the user the draft answers or the reviewer notes — only show the final revised answers after the pass is complete.
+After drafting all answers, spawn an isolated reviewer agent before presenting anything. This is not an in-context persona switch — it is a separate agent spawned via the Agent tool with explicit context injection.
 
-### Reviewer persona
+### How to invoke
 
-You are a talent acquisition specialist or hiring manager at [Company]. You are reviewing hundreds of applications for this specific role. You have read the JD carefully. You know nothing about the applicant beyond what is written in these answers. You will skim, not read — the first sentence of each answer determines whether you keep reading. You have no patience for irrelevance.
+Spawn the reviewer using the Agent tool with the following injected context:
 
-**Critical constraint:** The reviewer has NO access to the user's profile, career narrative, or background context. It can only see the JD and the written answers. If something in an answer requires outside context to make sense, the reviewer will not have that context and the answer will fail.
-
-### What the reviewer checks per answer
-
-1. **Relevance to role** — does the answer directly serve the job being applied for? Anything that reads as off-topic given only the JD will lose the reader.
-2. **First-sentence test** — if a skimmer reads only the first sentence, do they immediately understand the point? If not, the answer needs reordering.
-3. **Length** — is it appropriate for a text box on an application form? "Why this company" should be 3–5 sentences max. "Note to HM" should be 2–3 sentences max.
-4. **Coherence without context** — does the answer make sense to someone who knows nothing about the applicant? If a story or claim requires context the reviewer doesn't have, it will confuse rather than impress.
-5. **Tone** — does it sound human and direct, or does it read as a prepared statement? Skimmers notice the difference.
-
-### Reviewer output (internal only — never shown to user)
-
-For each answer that needs adjustment:
 ```
-REVIEWER NOTE — [Question]:
-Issue: [one sentence on what fails the skim test]
-Fix: [specific instruction for the rewrite]
+Agent(
+  prompt = [contents of modes/reviewer.md]
+           + "\n\nJOB DESCRIPTION:\n" + [full JD text]
+           + "\n\nAPPLICATION ANSWERS:\n" + [answers as JSON]
+)
 ```
 
-Then silently apply the fixes. Do not surface the reviewer notes or the draft answers to the user at any point.
+Pass **only** the JD text and the generated answers. Do not pass the profile, career narrative, CV text, evaluation report, or any other context. The reviewer sees only what a real hiring team member would see — nothing more.
+
+### Why a separate agent, not a persona switch
+
+An in-context reviewer has the applicant's profile and background in its context window whether instructed to ignore it or not. A spawned subagent with explicit context injection is isolated by construction — it cannot access what wasn't passed to it. This is the mechanism that makes the reviewer reliable.
+
+### What the reviewer returns
+
+The reviewer returns the complete revised Q&A as a JSON object. Apply those revisions silently. Do not surface the reviewer's changes or notes to the user at any point — only the final revised answers enter the sync step.
 
 ---
 
@@ -105,6 +102,65 @@ Applied to [Job Title] at [Company]. Q&A synced to Sheet 4. Ask me to pull up an
 ```
 
 The user can then ask to see and refine individual answers in conversation. This keeps the context loop open — improvements feed back into how future answers are generated — without front-loading a wall of text for every application.
+
+---
+
+## Batch mode: `/apply --batch`
+
+Use when preparing multiple applications at once. Evaluations remain sequential — batch mode handles the application prep phase only. No user input is required between roles; the user returns to a summary table.
+
+### When to use
+
+Run after a session of `/evaluate` where multiple roles were tiered and confirmed. Batch mode processes all roles that are ready to apply but haven't been applied to yet.
+
+### Flow
+
+**Step 1 — Load the queue.**
+Read `pipeline/pipeline.json`. Collect all entries where:
+- `status` is `evaluated` or `cv_tailored`
+- `tier` is `tier1` or `tier2` (Tier 3 uses boilerplate — apply individually via `/apply [company]` if needed)
+- `application_date` is null
+
+Display as a numbered list:
+```
+Roles ready to apply (N total):
+[1] Anthropic — Data Scientist, Safeguards — Tier 1
+[2] Stripe — Product Manager, Capital — Tier 2
+[3] Coinbase — Payments Risk Analyst II — Tier 2
+
+Enter numbers to include (e.g. 1,3) or 'all':
+```
+
+**Step 2 — Process each role in sequence.**
+For each selected role, run silently:
+
+1. Generate Q&A answers (Step 2 rules — tier handling, voice and tone rules all apply per role)
+2. Spawn isolated reviewer (Step 2b) — pass only JD + answers, no profile
+3. Apply reviewer revisions
+4. Sync answers to Sheet 4: `uv run scripts/sheets.py --sync-qa ...`
+5. Update `pipeline.json` status → `applied`, set `application_date` to today
+6. Sync to Sheet 1: `uv run scripts/sheets.py --sync-tracker`
+
+Do not pause for confirmation between roles. If a tailored CV is missing for a role, note it in the summary but continue processing.
+
+**Step 3 — Summary table.**
+After all roles are processed, output a single summary:
+
+```
+Batch complete — N applications prepared and synced to Sheets.
+
+Company        Title                        Tier  Q&A  CV
+────────────────────────────────────────────────────────────────
+Anthropic      Data Scientist, Safeguards    1     ✓    Tailored CV found
+Stripe         Product Manager, Capital      2     ✓    No tailored CV — export first
+Coinbase       Payments Risk Analyst II      2     ✓    Tailored CV found
+
+Ask me to pull up any answer if you want to review or improve it.
+```
+
+### Cost note
+
+Tier 1 and Tier 2 roles generate answers via LLM. Each role in the batch costs one generation pass plus one reviewer subagent call. Tier 3 uses boilerplate (zero generation cost) and should be run individually to avoid batching overhead for trivial applications.
 
 ---
 
