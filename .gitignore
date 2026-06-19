@@ -13,11 +13,11 @@ pipeline/reports/*
 
 # job-hunter: generated output — never commit
 # Ignore contents but keep the folders (via .gitkeep) so they exist after cloning
-submitted/*
-tailored/*
+cv/record/*
+cv/pdf/*
 jds/*
-!submitted/.gitkeep
-!tailored/.gitkeep
+!cv/record/.gitkeep
+!cv/pdf/.gitkeep
 !jds/.gitkeep
 config/targets.yml
 
