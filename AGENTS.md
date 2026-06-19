@@ -234,6 +234,11 @@ Every evaluated role must be logged to `pipeline/pipeline.json` with:
 
 Statuses: `discovered` → `evaluated` → `cv_tailored` → `applied` → `screening` → `interview` → `offer` → `rejected` → `withdrawn`
 
+**Tracker sheet statuses** (separate from pipeline.json — reflects external application state):
+`Queued` → `Sent` → `First Screening` → `Interview` → `Case Study` → `Rejected` → `Silent Rejection` → `Offer`
+
+`Queued` = application prepared by job-hunter, not yet submitted by user. Rows land here automatically after `/apply`. User updates to `Sent` manually after submitting the application form, or by saying "mark [company] as sent".
+
 ---
 
 ## CV Submission Rules

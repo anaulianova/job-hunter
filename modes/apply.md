@@ -93,12 +93,14 @@ Do not show the answers to the user before syncing. Run silently:
 
 1. Call `uv run scripts/sheets.py --sync-qa "[company]" "[job_title]" "[answers_json]"` to push answers to Sheet 4
 2. Update `pipeline.json` status → `applied`, set `application_date` to today
-3. Call `uv run scripts/sheets.py --sync-tracker` to push to Sheet 1
+3. Call `uv run scripts/sheets.py --sync-tracker` to push to Sheet 1 with status `Queued`
+
+The Tracker row lands as **Queued** (turquoise). The user fills out and submits the application manually, then updates the status to **Sent** — either by editing the dropdown in the sheet directly, or by asking: "mark [company] as sent".
 
 Then confirm with a single line:
 
 ```
-Applied to [Job Title] at [Company]. Q&A synced to Sheet 4. Ask me to pull up any answer if you want to review or improve it.
+[Job Title] at [Company] queued. Q&A in Sheet 4, application ready in Sheet 1. Ask me to pull up any answer to review, or say "mark [company] as sent" once you've submitted.
 ```
 
 The user can then ask to see and refine individual answers in conversation. This keeps the context loop open — improvements feed back into how future answers are generated — without front-loading a wall of text for every application.
@@ -139,7 +141,7 @@ For each selected role, run silently:
 3. Apply reviewer revisions
 4. Sync answers to Sheet 4: `uv run scripts/sheets.py --sync-qa ...`
 5. Update `pipeline.json` status → `applied`, set `application_date` to today
-6. Sync to Sheet 1: `uv run scripts/sheets.py --sync-tracker`
+6. Sync to Sheet 1: `uv run scripts/sheets.py --sync-tracker` — row lands as `Queued`
 
 Do not pause for confirmation between roles. If a tailored CV is missing for a role, note it in the summary but continue processing.
 
