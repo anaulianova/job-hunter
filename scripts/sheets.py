@@ -380,6 +380,106 @@ def fix_data_bold(sheets):
     print("✅ Removed bold from all data rows.")
 
 
+def apply_submitted_grayout(sheets):
+    """Grey out Pipeline rows where the Tracker shows status other than 'Queued'.
+
+    Strategy: write a 'Y' marker to column I in Pipeline for each submitted row,
+    then add a conditional format rule =$I2="Y" → dark grey at index 0 (highest
+    priority, overrides tier colour rules). Column I is used as the marker column.
+    """
+    def rgb(r, g, b):
+        return {"red": r / 255, "green": g / 255, "blue": b / 255}
+
+    # 1. Read Tracker — find (company, title) pairs with status != "Queued"
+    try:
+        result = sheets.values().get(
+            spreadsheetId=SHEET_ID, range=f"{TAB_TRACKER}!A2:C"
+        ).execute()
+        tracker_rows = result.get("values", [])
+    except Exception as e:
+        print(f"❌ Could not read Tracker: {e}")
+        return
+
+    submitted_keys = set()
+    for row in tracker_rows:
+        if len(row) >= 3:
+            company = row[0].strip().lower()
+            title   = row[1].strip().lower()
+            status  = row[2].strip()
+            if status and status != "Queued":
+                submitted_keys.add((company, title))
+
+    if not submitted_keys:
+        print("ℹ No submitted roles in Tracker (all are Queued or empty).")
+        return
+
+    # 2. Read Pipeline column A:B to find matching rows
+    try:
+        result = sheets.values().get(
+            spreadsheetId=SHEET_ID, range=f"{TAB_PIPELINE}!A2:B"
+        ).execute()
+        pipeline_rows = result.get("values", [])
+    except Exception as e:
+        print(f"❌ Could not read Pipeline: {e}")
+        return
+
+    if not pipeline_rows:
+        print("ℹ Pipeline is empty — nothing to grey out.")
+        return
+
+    sheet_ids = get_sheet_ids(sheets)
+    pipeline_id = sheet_ids[TAB_PIPELINE]
+
+    # 3. Write "Y" / "" marker to column I for each Pipeline row
+    markers = []
+    matched = 0
+    for row in pipeline_rows:
+        company = row[0].strip().lower() if len(row) > 0 else ""
+        title   = row[1].strip().lower() if len(row) > 1 else ""
+        if (company, title) in submitted_keys:
+            markers.append(["Y"])
+            matched += 1
+        else:
+            markers.append([""])
+
+    end_row = len(markers) + 1  # +1 for header row
+    sheets.values().update(
+        spreadsheetId=SHEET_ID,
+        range=f"{TAB_PIPELINE}!I2:I{end_row}",
+        valueInputOption="RAW",
+        body={"values": markers}
+    ).execute()
+
+    # 4. Add conditional format rule at index 0 (highest priority — overrides tier colours)
+    dark_grey = rgb(80, 80, 80)
+    light_grey_text = rgb(180, 180, 180)
+    sheets.batchUpdate(spreadsheetId=SHEET_ID, body={"requests": [{
+        "addConditionalFormatRule": {
+            "rule": {
+                "ranges": [{
+                    "sheetId": pipeline_id,
+                    "startRowIndex": 1, "endRowIndex": 2000,
+                    "startColumnIndex": 0, "endColumnIndex": 9
+                }],
+                "booleanRule": {
+                    "condition": {
+                        "type": "CUSTOM_FORMULA",
+                        "values": [{"userEnteredValue": '=$I2="Y"'}]
+                    },
+                    "format": {
+                        "backgroundColor": dark_grey,
+                        "textFormat": {"foregroundColor": light_grey_text}
+                    }
+                }
+            },
+            "index": 0
+        }
+    }]}).execute()
+
+    print(f"✅ Greyed out {matched} submitted row(s) in Pipeline.")
+    print(f"   Submitted keys matched: {sorted(submitted_keys)}")
+
+
 # ── Sync Pipeline (Sheet 2) ───────────────────────────────────────────────────
 
 def sync_pipeline(sheets):
@@ -506,6 +606,34 @@ def update_tracker_status(sheets, url, new_status):
 
 # ── Job Postings (Sheet 3) ────────────────────────────────────────────────────
 
+def update_pipeline_row(sheets, url):
+    """Update an existing Pipeline row by URL with current pipeline.json values."""
+    pipeline = load_pipeline()
+    entry = next((e for e in pipeline if e.get("url") == url), None)
+    if not entry:
+        print(f"❌ URL not found in pipeline.json: {url}")
+        return
+
+    result = sheets.values().get(
+        spreadsheetId=SHEET_ID, range=f"{TAB_PIPELINE}!G2:G"
+    ).execute()
+    rows = result.get("values", [])
+    for i, row in enumerate(rows):
+        if row and row[0] == url:
+            row_num = i + 2
+            new_values = [[str(entry.get(col, "") or "") for col in PIPELINE_COLS]]
+            sheets.values().update(
+                spreadsheetId=SHEET_ID,
+                range=f"{TAB_PIPELINE}!A{row_num}",
+                valueInputOption="RAW",
+                body={"values": new_values}
+            ).execute()
+            print(f"✅ Updated Pipeline row {row_num}: {entry['company']} — {entry['job_title']} — Tier {entry['tier']} — {entry['match_score']}/100")
+            return
+
+    print(f"⚠ URL not found in Pipeline sheet: {url}")
+
+
 def get_pending_urls(sheets):
     """Read Sheet 3 and return URLs with status 'pending' or blank."""
     try:
@@ -613,11 +741,13 @@ def main():
     parser.add_argument("--setup",            action="store_true", help="Create sheets, headers, and dropdowns")
     parser.add_argument("--fix-bold",                  action="store_true", help="Remove bold from all data rows")
     parser.add_argument("--fix-pipeline-formatting",   action="store_true", help="Apply tier row colours to Pipeline sheet")
+    parser.add_argument("--apply-submitted-grayout",   action="store_true", help="Grey out Pipeline rows where Tracker status is not Queued")
     parser.add_argument("--sync-pipeline",    action="store_true", help="Push evaluated roles to Sheet 2")
     parser.add_argument("--sync-tracker",     action="store_true", help="Push applied roles to Sheet 1")
     parser.add_argument("--get-pending-urls", action="store_true", help="Print pending URLs from Sheet 3")
     parser.add_argument("--mark-evaluated",   metavar="URL",       help="Mark URL as evaluated in Sheet 3")
     parser.add_argument("--update-status",    nargs=2, metavar=("URL", "STATUS"), help="Update Tracker status")
+    parser.add_argument("--update-pipeline-row", metavar="URL", help="Update an existing Pipeline row by URL from pipeline.json")
     parser.add_argument("--sync-qa",          nargs=3, metavar=("COMPANY", "TITLE", "ANSWERS_JSON"),
                         help="Push application Q&A answers to Sheet 4")
     args = parser.parse_args()
@@ -631,6 +761,8 @@ def main():
     elif args.fix_pipeline_formatting:
         _apply_pipeline_row_colors(sheets, get_sheet_ids(sheets)[TAB_PIPELINE])
         print("✅ Pipeline row colours applied.")
+    elif args.apply_submitted_grayout:
+        apply_submitted_grayout(sheets)
     elif args.sync_pipeline:
         sync_pipeline(sheets)
     elif args.sync_tracker:
@@ -641,6 +773,8 @@ def main():
         mark_evaluated(sheets, args.mark_evaluated)
     elif args.update_status:
         update_tracker_status(sheets, args.update_status[0], args.update_status[1])
+    elif args.update_pipeline_row:
+        update_pipeline_row(sheets, args.update_pipeline_row)
     elif args.sync_qa:
         sync_qa(sheets, args.sync_qa[0], args.sync_qa[1], args.sync_qa[2])
     else:

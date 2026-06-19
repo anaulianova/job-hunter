@@ -90,4 +90,4 @@ After outputting: "Does this angle land? Happy to sharpen the opening or reframe
 
 ## Saving the cover letter
 
-After the user approves: save to `submitted/cover_{company-slug}_{date}.md`.
+After the user approves: save to `cv/pdf/cover_{company-slug}_{date}.md`.

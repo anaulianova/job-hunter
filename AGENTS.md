@@ -40,6 +40,15 @@ Load permitted variants from `profile.permitted_title_variants`. Each entry defi
 - For any company not listed: do not change historical titles without explicit user permission in the session.
 - Founder/co-founder designations must always remain unless the user explicitly removes them in the session.
 
+### Same-Company Title Consistency
+When multiple roles at the same company are in the pipeline (status not `skipped` or `withdrawn`), title variants must be identical across all CVs submitted to that company.
+
+- The title choice is **locked to the variant used for the role with the highest match score** at that company.
+- If the current role has a **lower score** than an existing pipeline entry at the same company: adopt the title already chosen for the higher-scoring role — do not re-evaluate the variant independently.
+- If this is the **first role** at a company being evaluated: choose the title variant normally per `permitted_title_variants` rules. Document the chosen variant in the evaluation report so future evaluations at the same company can lock to it.
+- State in the evaluation report: `Title locked: [variant] — matches [Job Title] ([Score]/100), [Company], [date].`
+- Never send two different Revolut titles (or any other role with permitted variants) to the same company.
+
 ### Accuracy Rules
 - Never add skills, tools, or methodologies the user has not demonstrated.
 - Never reframe a responsibility as an outcome that didn't happen.
@@ -163,6 +172,8 @@ Rewrite the About Me paragraph tailored to this specific role.
 - Must lead with the most relevant framing for this JD
 - Never use terms listed in `profile.forbidden_descriptions`
 - Must be honest and defensible
+- **Write in first person.** Opening with a noun phrase is acceptable — e.g. "Data scientist and analyst with experience in..." (implicit "I am"). Beyond the opening, use "I", "my", "I've". Never use third-person verb constructions like "brings", "demonstrates", "combines", "has" — these read as a bio written about someone else.
+- **Never use the word "rare" to describe the user's background or skills.** Use "unique" instead. "rare" reads as arrogant; "unique" is accurate and appropriate.
 
 ---
 
@@ -245,7 +256,7 @@ Statuses: `discovered` → `evaluated` → `cv_tailored` → `applied` → `scre
 
 - Submit CV with filename: `CV_{FirstName}_{LastName}.pdf` (derive from `profile.name`)
 - After submission, rename archive copy to: `{company}_{month}{day}` (e.g. `anthropic_jun17`)
-- Save archive in `submitted/` folder
+- Save archive in `cv/pdf/` folder
 - Never submit without user validation of the final CV
 
 ---

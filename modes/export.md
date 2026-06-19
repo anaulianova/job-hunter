@@ -8,8 +8,8 @@ Handles CV tailoring and PDF export. Run after completing a 5-point evaluation.
 
 ```bash
 uv run scripts/cv_export.py --company elliptic-da --date jun18
-# Looks for: submitted/cv_elliptic-da_jun18.md → falls back to cv.md
-# Outputs:   submitted/elliptic-da_jun18.pdf
+# Looks for: cv/pdf/cv_elliptic-da_jun18.md → falls back to cv.md
+# Outputs:   cv/pdf/elliptic-da_jun18.pdf
 
 uv run scripts/cv_export.py --input path/to/file.md --company stripe --date jun17
 # Explicit source file
@@ -24,20 +24,20 @@ Date defaults to today if omitted. The script warns `⚠️ PDF is N pages` if c
 1. Run `/evaluate` on a JD — this produces a report in `pipeline/reports/`
 2. Ask Claude to tailor the CV: *"Tailor my CV for [role]"*
 3. Claude applies Point 3 amendments + Point 4 (sensitive role decisions) + Point 5 (About Me)
-4. Claude writes the tailored version to `submitted/cv_{company}_{date}.md`
+4. Claude writes the tailored version to `cv/pdf/cv_{company}_{date}.md`
 5. You review and approve
 6. Run the export command above
-7. PDF lands in `submitted/{company}_{date}.pdf`
+7. PDF lands in `cv/pdf/{company}_{date}.pdf`
 
 ---
 
 ## File Structure
 
 ```
-tailored/
+cv/record/
   cv_{company}_{date}.md   ← tailored CV source (not committed to git)
 
-submitted/
+cv/pdf/
   {company}_{date}.pdf     ← submission copy and permanent record
 ```
 

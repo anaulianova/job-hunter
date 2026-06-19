@@ -218,8 +218,8 @@ job-hunter/
 │   └── linkedin_import.py # LinkedIn saved jobs CSV import
 ├── pipeline/              # Your evaluated roles and reports (gitignored)
 ├── profile/               # Your user profile JSON (gitignored)
-├── submitted/             # Submitted CV versions (gitignored)
-├── tailored/              # Tailored CV drafts (gitignored)
+├── cv/pdf/             # Submitted CV versions (gitignored)
+├── cv/record/              # Tailored CV drafts (gitignored)
 └── jds/                   # Job description text files (gitignored)
 ```
 

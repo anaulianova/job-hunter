@@ -19,9 +19,15 @@
 ## Step 1 — Confirm CV
 
 Check that the tailored CV exists:
-- Look for `tailored/cv_{company-slug}_{date}.md` and `submitted/{company-slug}_{date}.pdf`
-- If found: "CV ready: `submitted/{company-slug}_{date}.pdf` → rename to `CV_{FirstName}_{LastName}.pdf` before uploading."
+- Look for `cv/record/cv_{company-slug}_{date}.md` and `cv/pdf/{company-slug}_{date}.pdf`
+- If found: "CV ready: `cv/pdf/{company-slug}_{date}.pdf` → rename to `CV_{FirstName}_{LastName}.pdf` before uploading."
 - If not found: "No tailored CV found for this role. Run the CV export first: `uv run scripts/cv_export.py --company {company-slug} --date {date}`"
+
+**Title consistency check.** Before confirming the CV, scan `pipeline/pipeline.json` for other non-skipped/non-withdrawn entries at the same company.
+- If any exist: identify the entry with the highest match score and check which title variant was used in its CV amendments (from the evaluation report).
+- Verify the current CV uses the **same title variant** for any role with `permitted_title_variants`.
+- If a mismatch is found: flag it before the user proceeds — `⚠ TITLE MISMATCH — [Company]: This CV uses "[current variant]" but the [Job Title] application ([Score]/100) uses "[locked variant]". Amend this CV to match before submitting.`
+- Do not proceed to Q&A generation until the user has confirmed the CV title is consistent.
 
 ---
 

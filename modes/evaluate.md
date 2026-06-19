@@ -139,6 +139,8 @@ Rules:
 - Lead with the framing most relevant to this JD
 - Never use any term listed in `profile.forbidden_descriptions`
 - Honest and defensible
+- **Write in first person.** Opening with a noun phrase is acceptable — e.g. "Data scientist and analyst with experience in..." (implicit "I am"). Beyond the opening, use "I", "my", "I've". Never use third-person verb constructions like "brings", "demonstrates", "combines", "has" — these read as a bio written about someone else, not a personal summary.
+- **Never use the word "rare" to describe the user's background or combination of skills.** Use "unique" instead. "rare" reads as arrogant; "unique" is accurate and appropriate.
 
 **Output:**
 ```
@@ -190,4 +192,30 @@ Next step: Review CV amendments above, update your CV, then run /track to log th
   "notes": ""
 }
 ```
-3. Ask: "Would you like me to draft a cover letter for this role?" (Tier 1 only)
+3. **Duplicate company check.** After saving, scan `pipeline/pipeline.json` for other entries with the same company name that are not `skipped` or `withdrawn`.
+
+   If duplicates exist:
+   - Compare tiers and match scores across all roles at this company.
+   - Add a `notes` entry on the new pipeline record recommending which role is the stronger application (e.g. "Better fit than [Job Title] — higher score and closer archetype alignment. Prioritise this one.").
+   - If the other entry already has notes, append rather than overwrite.
+   - Flag a **multi-application risk** in the evaluation output under the Summary if any of the following apply:
+     - One of the roles is Tier 1 (applying to multiple roles may dilute the strength of that application and signal lack of clarity to the hiring team)
+     - The company is small or mid-size (estimated <500 employees) and the roles are in the same geography and same functional area — likely one hiring manager team reviewing both applications
+   - Do **not** flag a risk if the company is large (e.g. Barclays, EY, Stripe, Coinbase, Databricks), or if the roles are in different geographies, or if they are clearly separate functions (e.g. policy vs. data science).
+
+   **Risk flag format** (append to Summary block if triggered):
+   ```
+   ⚠ MULTI-APPLICATION RISK — [Company]
+   Other role in pipeline: [Job Title] — Tier [X] — [Score]/100
+   Risk: [one sentence — e.g. "Applying to both may dilute your Tier 1 application" or "Company is likely small enough for a shared hiring team"]
+   Recommendation: [one sentence — e.g. "Prioritise this role and withdraw the other" or "Apply to both but stagger submissions by 2+ weeks"]
+   ```
+
+4. **Same-company title consistency check.** After the duplicate company check, if other non-skipped/non-withdrawn entries exist at the same company:
+   - Identify which existing entry has the **highest match score**.
+   - Compare to the current role's score.
+   - If the existing entry scores **higher**: lock the title variant to whatever was used for that role. State in the evaluation report: `Title locked: [variant] — matches [Job Title] ([Score]/100), [Company].`
+   - If the current role scores **higher** (or this is the first entry at the company): choose the variant normally per `permitted_title_variants` rules, and document the choice in the report so all future applications to this company lock to it.
+   - If the current role **ties**: use the variant that best fits the current JD — document the choice and apply it retroactively as the lock for the company.
+
+5. Ask: "Would you like me to draft a cover letter for this role?" (Tier 1 only)
