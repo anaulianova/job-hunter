@@ -61,7 +61,7 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 TRACKER_HEADERS  = ["Company", "Job Title", "Status", "Application Date", "Medium", "URL", "Location"]
 TRACKER_COLS     = ["company", "job_title", "status", "application_date", "medium", "url", "location"]
-TRACKER_STATUSES = ["Sent", "First Screening", "Interview", "Case Study", "Rejected", "Silent Rejection", "Offer"]
+TRACKER_STATUSES = ["Queued", "Sent", "First Screening", "Interview", "Case Study", "Rejected", "Silent Rejection", "Offer"]
 
 PIPELINE_HEADERS = ["Company", "Job Title", "Tier", "Match Score", "Evaluated Date", "Location", "URL", "Notes"]
 PIPELINE_COLS    = ["company", "job_title", "tier", "match_score", "evaluated_date", "location", "url", "notes"]
@@ -254,6 +254,7 @@ def setup(sheets):
 
     # Tracker: status cell colours (col C — added after row rules → higher priority)
     tracker_cell_colors = [
+        ("Queued",           rgb(178, 235, 242)),  # turquoise
         ("Sent",             rgb(252, 228, 236)),  # pink
         ("First Screening",  rgb(255, 249, 196)),  # yellow
         ("Interview",        rgb(187, 222, 251)),  # blue
@@ -451,7 +452,7 @@ def sync_tracker(sheets):
         row = [
             e.get("company", ""),
             e.get("job_title", ""),
-            "Sent",  # default status for new entries
+            "Queued",  # default — set to Sent after user submits the application
             str(e.get("application_date", "") or ""),
             "",      # medium — filled manually
             e.get("url", ""),
