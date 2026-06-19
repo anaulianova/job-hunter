@@ -72,13 +72,51 @@ Key fields used throughout:
 | `/scan` | `modes/scan.md` | Job discovery via portals or URL input |
 | `/evaluate {url or JD}` | `modes/evaluate.md` | Full 5-point evaluation |
 | `/apply {company}` | `modes/apply.md` | Generate application Q&A + sync to Google Sheets |
+| `/apply --batch` | `modes/apply.md` | Batch-prepare all queued evaluated roles |
 | `/cover {company}` | `modes/coverletter.md` | Cover letter for Tier 1 roles — run after /apply |
 | `/research {company}` | `modes/research.md` | Company brief before application or interview |
 | `/interview {company}` | `modes/interview.md` | Interview prep by stage |
 | `/pipeline` | Display `pipeline/pipeline.json` formatted | Current job pipeline |
 | `/track` | `modes/track.md` | Update Google Sheets tracker |
+| _(internal)_ | `modes/reviewer.md` | Isolated Q&A reviewer — spawned by /apply, never called directly |
 
 If the user pastes a URL or JD without a command prefix, auto-route to `/evaluate`.
+
+---
+
+## Agent Architecture
+
+job-hunter uses a two-agent model for application preparation. Understanding this separation matters because it is the mechanism that makes the reviewer reliable.
+
+### Orchestrator (main session)
+
+Holds the full user profile, CV, evaluation history, and career narrative. Responsible for:
+- All evaluation work (`/evaluate`, `/scan`, `/research`, `/interview`)
+- Q&A generation in `/apply` — uses full profile context to write answers
+- Batch orchestration — manages the queue, sequences roles, collects results
+
+### Reviewer (isolated subagent)
+
+Spawned by `/apply` via the Agent tool for each application. Receives only:
+- The job description text
+- The generated Q&A answers as JSON
+
+Has no access to the profile, CV, career narrative, evaluation report, or conversation history. Acts purely as a hiring team member reading a cold application. This isolation is the point: it catches answers that only make sense if the reader already knows the applicant — because hiring teams don't.
+
+### Why this matters
+
+An in-context reviewer has the applicant's background in its context window whether instructed to ignore it or not. A spawned subagent with explicit context injection is isolated by construction — it cannot access what wasn't passed to it. The subagent model is not a preference; it is the only reliable implementation.
+
+### Parallel and batch execution
+
+| Work type | Execution model | Rationale |
+|---|---|---|
+| `/scan` (ATS fetches) | Parallel — `scan.py` handles concurrently | Network I/O, cheap to parallelise |
+| `/evaluate` | Sequential, user-driven | Requires human decision between each role |
+| `/apply --batch` | Sequential per role, no user input between | LLM-heavy; batch removes the wait, not the sequence |
+| Reviewer subagent | One per application, spawned during apply | Isolated by design; runs after each generation pass |
+
+Running multiple evaluate agents in parallel would cost 3× the context tokens for wall-clock savings that only matter when queueing many JDs simultaneously. The bottleneck in evaluation is the human decision, not the generation time.
 
 ---
 
