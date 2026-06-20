@@ -4,8 +4,8 @@ Converts a tailored CV markdown file to a professionally formatted PDF.
 
 Usage:
     uv run scripts/cv_export.py --company elliptic --date jun18
-        → looks for cv/record/cv_elliptic_jun18.md, falls back to cv.md
-        → writes cv/pdf/elliptic_jun18.pdf
+        → looks for app/cv/record/cv_elliptic_jun18.md, falls back to cv.md
+        → writes app/cv/pdf/elliptic_jun18.pdf
 
     uv run scripts/cv_export.py --company elliptic
         → date defaults to today
@@ -15,7 +15,7 @@ Usage:
 
 Tailoring workflow:
     1. Claude reads cv.md + pipeline/reports/{role}.md and applies amendments
-    2. Claude writes tailored version to cv/record/cv_{company}_{date}.md
+    2. Claude writes tailored version to app/cv/record/cv_{company}_{date}.md
     3. User validates
     4. Run this script to export PDF
 """
@@ -36,8 +36,8 @@ except ImportError:
     sys.exit(1)
 
 ROOT = Path(__file__).parent.parent
-SUBMITTED_DIR = ROOT / "cv" / "pdf"
-TAILORED_DIR  = ROOT / "cv" / "record"
+SUBMITTED_DIR = ROOT / "app" / "cv" / "pdf"
+TAILORED_DIR  = ROOT / "app" / "cv" / "record"
 
 CV_CSS = """
 @page {
@@ -236,7 +236,7 @@ def main():
     parser.add_argument("--date",
                         help="Date string, e.g. 'jun18' (defaults to today)")
     parser.add_argument("--input",
-                        help="Explicit markdown source (default: cv/pdf/cv_{company}_{date}.md → cv.md)")
+                        help="Explicit markdown source (default: app/cv/record/cv_{company}_{date}.md → cv.md)")
     args = parser.parse_args()
 
     date_str = args.date or datetime.today().strftime("%b%-d").lower()
