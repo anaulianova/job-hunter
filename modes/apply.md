@@ -109,7 +109,13 @@ Then confirm with a single line:
 [Job Title] at [Company] queued. Q&A in Sheet 4, application ready in Sheet 1. Ask me to pull up any answer to review, or say "mark [company] as sent" once you've submitted.
 ```
 
-The user can then ask to see and refine individual answers in conversation. This keeps the context loop open — improvements feed back into how future answers are generated — without front-loading a wall of text for every application.
+The user can then ask to see and refine individual answers in conversation.
+
+**For Tier 1 roles:** immediately after the confirmation line, auto-trigger the cover letter flow:
+
+> "This is a Tier 1 role — generating cover letter now."
+
+Run `/cover` as defined in `modes/coverletter.md`. Do not wait for the user to ask. This keeps the context loop open — improvements feed back into how future answers are generated — without front-loading a wall of text for every application.
 
 ---
 
