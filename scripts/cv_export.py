@@ -42,7 +42,7 @@ TAILORED_DIR  = ROOT / "app" / "cv" / "record"
 CV_CSS = """
 @page {
     size: A4;
-    margin: 1.4cm 1.3cm 1.3cm 1.3cm;
+    margin: 1.4cm 1.3cm 0.5cm 1.3cm;
 }
 
 body {
