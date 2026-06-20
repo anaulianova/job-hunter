@@ -67,7 +67,7 @@ PIPELINE_HEADERS = ["Company", "Job Title", "Tier", "Match Score", "Evaluated Da
 PIPELINE_COLS    = ["company", "job_title", "tier", "match_score", "evaluated_date", "location", "url", "notes"]
 
 POSTINGS_HEADERS = ["URL", "Company", "Job Title", "Date Added", "Status"]
-POSTINGS_STATUSES = ["Pending", "Evaluating", "Evaluated", "Skipped"]
+POSTINGS_STATUSES = ["Pending", "Manual Retrieval", "Evaluated", "Skipped"]
 
 QA_HEADERS = [
     "Company", "Job Title", "Tier", "Date",
@@ -287,7 +287,7 @@ def setup(sheets):
     # Job Postings: status cell colours (col E = index 4)
     postings_cell_colors = [
         ("Pending",   rgb(255, 249, 196)),  # yellow
-        ("Evaluating", rgb(255, 224, 178)), # orange
+        ("Manual Retrieval", rgb(255, 224, 178)), # orange
         ("Skipped",   rgb(255, 205, 210)),  # red
         ("Evaluated", rgb(200, 230, 201)),  # green
     ]
@@ -736,6 +736,50 @@ def mark_evaluated(sheets, url):
                 body={"values": [["Evaluated"]]}
             ).execute()
             print(f"✅ Marked as evaluated: {url}")
+            return
+
+    print(f"⚠ URL not found in {TAB_POSTINGS}: {url}")
+
+
+def mark_manual_retrieval(sheets, url):
+    """Set status = 'Manual Retrieval' for a URL in Sheet 3."""
+    result = sheets.values().get(
+        spreadsheetId=SHEET_ID, range=f"{TAB_POSTINGS}!A2:E"
+    ).execute()
+    rows = result.get("values", [])
+
+    for i, row in enumerate(rows):
+        if row and row[0].strip() == url:
+            row_num = i + 2
+            sheets.values().update(
+                spreadsheetId=SHEET_ID,
+                range=f"{TAB_POSTINGS}!E{row_num}",
+                valueInputOption="RAW",
+                body={"values": [["Manual Retrieval"]]}
+            ).execute()
+            print(f"✅ Marked as Manual Retrieval: {url}")
+            return
+
+    print(f"⚠ URL not found in {TAB_POSTINGS}: {url}")
+
+
+def mark_skipped_posting(sheets, url):
+    """Set status = 'Skipped' for a URL in Sheet 3."""
+    result = sheets.values().get(
+        spreadsheetId=SHEET_ID, range=f"{TAB_POSTINGS}!A2:E"
+    ).execute()
+    rows = result.get("values", [])
+
+    for i, row in enumerate(rows):
+        if row and row[0].strip() == url:
+            row_num = i + 2
+            sheets.values().update(
+                spreadsheetId=SHEET_ID,
+                range=f"{TAB_POSTINGS}!E{row_num}",
+                valueInputOption="RAW",
+                body={"values": [["Skipped"]]}
+            ).execute()
+            print(f"✅ Marked as Skipped: {url}")
             return
 
     print(f"⚠ URL not found in {TAB_POSTINGS}: {url}")
