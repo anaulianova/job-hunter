@@ -543,7 +543,7 @@ def apply_submitted_grayout(sheets):
 # ── Sync Pipeline (Sheet 2) ───────────────────────────────────────────────────
 
 def sync_pipeline(sheets):
-    """Push all evaluated roles to Sheet 2 — Pipeline."""
+    """Upsert all evaluated roles to Sheet 2 — update existing rows, append new ones."""
     pipeline = load_pipeline()
     evaluated = [e for e in pipeline if e.get("status") not in ("discovered",)]
 
@@ -551,38 +551,69 @@ def sync_pipeline(sheets):
         print("ℹ No evaluated roles in pipeline yet.")
         return
 
-    # Get existing URLs in sheet to avoid duplicates
+    # Read existing sheet: build url→rownum and (company,title)→rownum maps
     try:
         result = sheets.values().get(
-            spreadsheetId=SHEET_ID, range=f"{TAB_PIPELINE}!G2:G"
+            spreadsheetId=SHEET_ID, range=f"{TAB_PIPELINE}!A2:H"
         ).execute()
-        existing_urls = {r[0] for r in result.get("values", []) if r}
+        existing_rows = result.get("values", [])
     except Exception:
-        existing_urls = set()
+        existing_rows = []
 
-    new_rows = []
+    url_to_row = {}
+    ct_to_row = {}
+    for i, row in enumerate(existing_rows):
+        row_num = i + 2
+        url = row[6].strip() if len(row) > 6 else ""
+        company = row[0].strip() if len(row) > 0 else ""
+        title = row[1].strip() if len(row) > 1 else ""
+        if url:
+            url_to_row[url] = row_num
+        if company and title:
+            ct_to_row[(company.lower(), title.lower())] = row_num
+
+    updates = []
+    appends = []
     for e in evaluated:
-        if e.get("url") in existing_urls:
-            continue
-        row = [str(e.get(col, "") or "") for col in PIPELINE_COLS]
-        new_rows.append(row)
+        row_data = [str(e.get(col, "") or "") for col in PIPELINE_COLS]
+        url = e.get("url", "") or ""
+        company = (e.get("company", "") or "").lower()
+        title = (e.get("job_title", "") or "").lower()
 
-    if not new_rows:
-        print("✅ Pipeline sheet already up to date.")
-        return
+        if url and url in url_to_row:
+            updates.append((url_to_row[url], row_data))
+        elif (company, title) in ct_to_row:
+            updates.append((ct_to_row[(company, title)], row_data))
+        else:
+            appends.append(row_data)
 
-    sheets.values().append(
-        spreadsheetId=SHEET_ID,
-        range=f"{TAB_PIPELINE}!A1",
-        valueInputOption="RAW",
-        insertDataOption="INSERT_ROWS",
-        body={"values": new_rows}
-    ).execute()
+    for row_num, row_data in updates:
+        sheets.values().update(
+            spreadsheetId=SHEET_ID,
+            range=f"{TAB_PIPELINE}!A{row_num}",
+            valueInputOption="RAW",
+            body={"values": [row_data]}
+        ).execute()
+
+    if appends:
+        sheets.values().append(
+            spreadsheetId=SHEET_ID,
+            range=f"{TAB_PIPELINE}!A1",
+            valueInputOption="RAW",
+            insertDataOption="INSERT_ROWS",
+            body={"values": appends}
+        ).execute()
+
     _unformat_data_rows(sheets, get_sheet_ids(sheets)[TAB_PIPELINE])
 
-    print(f"✅ Synced {len(new_rows)} roles to Sheet 2 — {TAB_PIPELINE}.")
-    for row in new_rows:
-        print(f"   {row[0]} — {row[1]} — Tier {row[2]} — {row[3]}/100")
+    print(f"✅ Pipeline sync: {len(updates)} updated, {len(appends)} added.")
+    for row_num, row in updates:
+        print(f"   ↻ Row {row_num}: {row[0]} — {row[1]} — Tier {row[2]}")
+    for row in appends:
+        print(f"   + {row[0]} — {row[1]} — Tier {row[2]}")
+
+    # Keep Job Postings statuses in sync with pipeline tiers
+    sync_postings_statuses(sheets)
 
 
 # ── Sync Tracker (Sheet 1) ────────────────────────────────────────────────────
@@ -785,6 +816,83 @@ def mark_skipped_posting(sheets, url):
     print(f"⚠ URL not found in {TAB_POSTINGS}: {url}")
 
 
+def sync_postings_statuses(sheets):
+    """Derive Job Postings status from pipeline.json tier — the canonical source of truth.
+
+    tier = "skip"  → "Skipped"
+    tier = 1/2/3   → "Evaluated"
+    no tier yet    → leave unchanged (Pending / Manual Retrieval)
+    """
+    pipeline = load_pipeline()
+    url_to_tier = {e["url"]: e.get("tier") for e in pipeline if e.get("url")}
+
+    result = sheets.values().get(
+        spreadsheetId=SHEET_ID, range=f"{TAB_POSTINGS}!A2:E"
+    ).execute()
+    rows = result.get("values", [])
+
+    update_data = []
+    for i, row in enumerate(rows):
+        if not row:
+            continue
+        url = row[0].strip()
+        current_status = row[4].strip() if len(row) > 4 else ""
+        if url not in url_to_tier:
+            continue
+        tier = url_to_tier[url]
+        if tier == "skip":
+            new_status = "Skipped"
+        elif str(tier) in ("1", "2", "3"):
+            new_status = "Evaluated"
+        else:
+            continue  # tier is None/unknown — don't touch status yet
+        if new_status != current_status:
+            update_data.append({
+                "range": f"{TAB_POSTINGS}!E{i + 2}",
+                "values": [[new_status]]
+            })
+
+    if not update_data:
+        print("✅ Job Postings statuses already up to date.")
+        return
+
+    sheets.values().batchUpdate(
+        spreadsheetId=SHEET_ID,
+        body={"valueInputOption": "RAW", "data": update_data}
+    ).execute()
+    print(f"✅ Synced {len(update_data)} Job Postings status(es) from pipeline tier.")
+
+
+def update_postings_dropdown(sheets):
+    """Push current POSTINGS_STATUSES list to the Job Postings dropdown validation."""
+    sheet_ids = get_sheet_ids(sheets)
+    if TAB_POSTINGS not in sheet_ids:
+        print(f"❌ Sheet '{TAB_POSTINGS}' not found.")
+        return
+    postings_id = sheet_ids[TAB_POSTINGS]
+    sheets.batchUpdate(
+        spreadsheetId=SHEET_ID,
+        body={"requests": [{
+            "setDataValidation": {
+                "range": {
+                    "sheetId": postings_id,
+                    "startRowIndex": 1, "endRowIndex": 1000,
+                    "startColumnIndex": 4, "endColumnIndex": 5
+                },
+                "rule": {
+                    "condition": {
+                        "type": "ONE_OF_LIST",
+                        "values": [{"userEnteredValue": s} for s in POSTINGS_STATUSES]
+                    },
+                    "showCustomUi": True,
+                    "strict": False
+                }
+            }
+        }]}
+    ).execute()
+    print(f"✅ Job Postings dropdown updated: {', '.join(POSTINGS_STATUSES)}")
+
+
 # ── App Q&A (Sheet 4) ─────────────────────────────────────────────────────────
 
 def sync_qa(sheets, company, job_title, answers_json):
@@ -869,6 +977,8 @@ def main():
     parser.add_argument("--mark-evaluated",   metavar="URL",       help="Mark URL as evaluated in Sheet 3")
     parser.add_argument("--update-status",    nargs=2, metavar=("URL", "STATUS"), help="Update Tracker status")
     parser.add_argument("--update-pipeline-row", metavar="URL", help="Update an existing Pipeline row by URL from pipeline.json")
+    parser.add_argument("--sync-postings-statuses", action="store_true", help="Derive Job Postings statuses from pipeline tier")
+    parser.add_argument("--update-postings-dropdown", action="store_true", help="Push current POSTINGS_STATUSES to Job Postings dropdown")
     parser.add_argument("--sync-qa",          nargs=3, metavar=("COMPANY", "TITLE", "ANSWERS_JSON"),
                         help="Push application Q&A answers to Sheet 4")
     args = parser.parse_args()
@@ -898,6 +1008,10 @@ def main():
         update_tracker_status(sheets, args.update_status[0], args.update_status[1])
     elif args.update_pipeline_row:
         update_pipeline_row(sheets, args.update_pipeline_row)
+    elif args.sync_postings_statuses:
+        sync_postings_statuses(sheets)
+    elif args.update_postings_dropdown:
+        update_postings_dropdown(sheets)
     elif args.sync_qa:
         sync_qa(sheets, args.sync_qa[0], args.sync_qa[1], args.sync_qa[2])
     else:
