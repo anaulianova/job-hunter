@@ -613,7 +613,7 @@ def sync_tracker(sheets):
             e.get("company", ""),
             e.get("job_title", ""),
             "Queued",  # default — set to Sent after user submits the application
-            str(e.get("application_date", "") or ""),
+            "",        # application date filled manually when user actually submits
             e.get("url", ""),
             e.get("location", ""),
         ]
