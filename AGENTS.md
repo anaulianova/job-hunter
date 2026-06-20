@@ -49,6 +49,14 @@ When multiple roles at the same company are in the pipeline (status not `skipped
 - State in the evaluation report: `Title locked: [variant] — matches [Job Title] ([Score]/100), [Company], [date].`
 - Never send two different Revolut titles (or any other role with permitted variants) to the same company.
 
+### Subtitle Keyword Selection
+The CV subtitle line has a fixed first keyword, a variable middle slot, and a fixed last keyword. All values and selection rules are defined in `profile/user_profile.json` under `subtitle_keywords` — load them from there.
+
+- `fixed_first` and `fixed_last` never change.
+- Choose the variable keyword from `variable_options` using `selection_rules` in the profile.
+- State the chosen keyword and rationale in the evaluation report.
+- Apply it to the subtitle line when generating the tailored CV.
+
 ### Accuracy Rules
 - Never add skills, tools, or methodologies the user has not demonstrated.
 - Never reframe a responsibility as an outcome that didn't happen.
@@ -255,9 +263,10 @@ Statuses: `discovered` → `evaluated` → `cv_tailored` → `applied` → `scre
 ## CV Submission Rules
 
 - Submit CV with filename: `CV_{FirstName}_{LastName}.pdf` (derive from `profile.name`)
-- After submission, rename archive copy to: `{company}_{month}{day}` (e.g. `anthropic_jun17`)
-- Save archive in `cv/pdf/` folder
+- Submit cover letter with filename: `Cover_Letter_{FirstName}_{LastName}.pdf`
+- After submission, archive copies live in `app/cv/pdf/` and `app/coverletter/pdf/`
 - Never submit without user validation of the final CV
+- Cover letter personal details (address, phone) are injected at export time from `profile/user_profile.json` — never hardcode them in the markdown source file
 
 ---
 
@@ -276,9 +285,17 @@ Sheet structure:
 
 ## Cover Letter Rules
 
-- Optional but recommended for Tier 1 roles with strong narrative fit
-- Maximum 4 paragraphs
-- Opening must reference something specific about the company, not generic praise
-- Must connect the user's specific background to the role's specific problem
-- Never write: "I am writing to apply for..."
-- When drafting: always ask "what angle?" before writing — narrative choices matter
+- Auto-triggered by `/apply` for Tier 1 roles; can also be run standalone via `/cover`
+- Two format options: **standard** (3–4 paragraphs) or **wild card** (Claude URL); choose based on company type
+- Wild card is appropriate for AI-native companies and tech-forward startups; never for traditional finance or firms with restricted external web access
+- Maximum 4 paragraphs for standard format
+- Opening must name what the user did and draw a direct line to what this company is doing — never generic, never "I am writing to apply for..."
+- Evidence paragraph: keep it tight — demonstrate skill and result, not internal system mechanics
+- Never openly acknowledge a gap or put the candidate in a weak position — reframe positively or leave implicit
+- Never use pedantic parallels ("X is structurally identical to Y — A replaces B, and C replaces D")
+- No em dashes anywhere in the letter — restructure sentences instead
+- Never mention location or willingness to relocate — handled in Q&A
+- Always close: thank the reader for their time + invite them to discuss qualifications
+- After draft: spawn isolated reviewer agent (JD + letter text only, no other context); show reviewer feedback to user; apply improvements before finalising
+- Save body only to `app/coverletter/record/cover_{company}_{date}.md` — personal details injected at export
+- Export via: `uv run scripts/coverletter_export.py --company {slug} --date {date}`

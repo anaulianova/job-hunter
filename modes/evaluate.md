@@ -109,6 +109,15 @@ KEYWORD INSERTED: [keyword]
 
 After amendments: "These edits address [X] of the 5 missing keywords. Keywords not yet addressed: [list any remaining]."
 
+**Subtitle keyword selection.** As part of Point 3, also select the variable subtitle keyword for the tailored CV. Load `subtitle_keywords` from `profile/user_profile.json`. Choose one value from `variable_options` based on the role type, using `selection_rules` as the guide. Output:
+
+```
+SUBTITLE: [fixed_first] • [chosen variable keyword] • [fixed_last]
+RATIONALE: [one sentence — why this keyword fits this role]
+```
+
+This line must appear in the evaluation report and be applied when generating the tailored CV.
+
 ---
 
 ## Point 4 — Sensitive Role Decision
