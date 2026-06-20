@@ -4,41 +4,56 @@ Handles CV tailoring and PDF export. Run after completing a 5-point evaluation.
 
 ---
 
-## Export Command
+## Export Commands
 
+**CV:**
 ```bash
 uv run scripts/cv_export.py --company elliptic-da --date jun18
-# Looks for: cv/pdf/cv_elliptic-da_jun18.md → falls back to cv.md
-# Outputs:   cv/pdf/elliptic-da_jun18.pdf
+# Looks for: app/cv/record/cv_elliptic-da_jun18.md → falls back to cv.md
+# Outputs:   app/cv/pdf/elliptic-da_jun18.pdf
 
 uv run scripts/cv_export.py --input path/to/file.md --company stripe --date jun17
 # Explicit source file
+```
+
+**Cover letter:**
+```bash
+uv run scripts/coverletter_export.py --company gsr --date jun20
+# Reads:   app/coverletter/record/cover_gsr_jun20.md (body only)
+# Injects: contact block from profile/user_profile.json
+# Outputs: app/coverletter/pdf/cover_gsr_jun20.pdf
 ```
 
 Date defaults to today if omitted. The script warns `⚠️ PDF is N pages` if content overflows — the CV must always be 1 page.
 
 ---
 
-## Tailoring Workflow
+## CV Tailoring Workflow
 
 1. Run `/evaluate` on a JD — this produces a report in `pipeline/reports/`
 2. Ask Claude to tailor the CV: *"Tailor my CV for [role]"*
-3. Claude applies Point 3 amendments + Point 4 (sensitive role decisions) + Point 5 (About Me)
-4. Claude writes the tailored version to `cv/pdf/cv_{company}_{date}.md`
+3. Claude applies Point 3 amendments + Point 4 (sensitive role decisions) + Point 5 (About Me) + subtitle keyword selection
+4. Claude writes the tailored version to `app/cv/record/cv_{company}_{date}.md`
 5. You review and approve
 6. Run the export command above
-7. PDF lands in `cv/pdf/{company}_{date}.pdf`
+7. PDF lands in `app/cv/pdf/{company}_{date}.pdf`
 
 ---
 
 ## File Structure
 
 ```
-cv/record/
-  cv_{company}_{date}.md   ← tailored CV source (not committed to git)
+app/cv/record/
+  cv_{company}_{date}.md          ← tailored CV source (not committed to git)
 
-cv/pdf/
-  {company}_{date}.pdf     ← submission copy and permanent record
+app/cv/pdf/
+  {company}_{date}.pdf            ← CV submission copy and permanent record
+
+app/coverletter/record/
+  cover_{company}_{date}.md       ← cover letter body only (not committed to git)
+
+app/coverletter/pdf/
+  cover_{company}_{date}.pdf      ← cover letter with injected contact block
 ```
 
 The markdown file is the source of truth. Re-export any time to regenerate the PDF.

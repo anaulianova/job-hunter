@@ -245,7 +245,7 @@ if not reports_dir.exists():
 
 section("Output directories")
 
-for dirname in ["cv/record", "cv/pdf", "jds"]:
+for dirname in ["app/cv/record", "app/cv/pdf", "app/coverletter/record", "app/coverletter/pdf", "jds"]:
     dirpath = ROOT / dirname
     check(
         f"{dirname}/ directory exists",
