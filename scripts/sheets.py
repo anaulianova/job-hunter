@@ -59,8 +59,8 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 # ── Column definitions ────────────────────────────────────────────────────────
 
-TRACKER_HEADERS  = ["Company", "Job Title", "Status", "Application Date", "Medium", "URL", "Location"]
-TRACKER_COLS     = ["company", "job_title", "status", "application_date", "medium", "url", "location"]
+TRACKER_HEADERS  = ["Company", "Job Title", "Status", "Application Date", "URL", "Location"]
+TRACKER_COLS     = ["company", "job_title", "status", "application_date", "url", "location"]
 TRACKER_STATUSES = ["Queued", "Sent", "First Screening", "Interview", "Case Study", "Rejected", "Silent Rejection", "Offer"]
 
 PIPELINE_HEADERS = ["Company", "Job Title", "Tier", "Match Score", "Evaluated Date", "Location", "URL", "Notes"]
@@ -238,7 +238,7 @@ def setup(sheets):
                     "ranges": [{
                         "sheetId": tracker_id,
                         "startRowIndex": 1, "endRowIndex": 1000,
-                        "startColumnIndex": 0, "endColumnIndex": 7
+                        "startColumnIndex": 0, "endColumnIndex": 6
                     }],
                     "booleanRule": {
                         "condition": {
@@ -371,6 +371,26 @@ def _unformat_data_rows(sheets, sheet_id):
     }]}).execute()
 
 
+def delete_medium_column(sheets):
+    """Delete the Medium column (column E, index 4) from the Tracker sheet.
+    One-time migration — run once after removing Medium from TRACKER_HEADERS.
+    """
+    sheet_ids = get_sheet_ids(sheets)
+    tracker_id = sheet_ids[TAB_TRACKER]
+    sheets.batchUpdate(spreadsheetId=SHEET_ID, body={"requests": [{
+        "deleteDimension": {
+            "range": {
+                "sheetId": tracker_id,
+                "dimension": "COLUMNS",
+                "startIndex": 4,  # column E (0-indexed) = "Medium"
+                "endIndex": 5
+            }
+        }
+    }]}).execute()
+    print("✅ Deleted Medium column (E) from Tracker sheet.")
+    print("   Column order is now: Company | Job Title | Status | Application Date | URL | Location")
+
+
 def fix_data_bold(sheets):
     """Remove bold from all data rows on all sheets (--fix-bold command)."""
     existing = get_sheet_ids(sheets)
@@ -381,42 +401,29 @@ def fix_data_bold(sheets):
 
 
 def apply_submitted_grayout(sheets):
-    """Grey out Pipeline rows where the Tracker shows status other than 'Queued'.
+    """Write live COUNTIFS formulas to Pipeline column I and add a conditional format rule.
 
-    Strategy: write a 'Y' marker to column I in Pipeline for each submitted row,
-    then add a conditional format rule =$I2="Y" → dark grey at index 0 (highest
-    priority, overrides tier colour rules). Column I is used as the marker column.
+    Column I formula (per row):
+        =COUNTIFS(Tracker!A:A, A{n}, Tracker!B:B, B{n}, Tracker!C:C, "<>Queued") > 0
+
+    This evaluates to TRUE whenever the matching Tracker row has status != "Queued",
+    so rows grey out automatically when the user updates the Tracker — no re-run needed.
+    Conditional format rule: =$I2=TRUE → dark grey (index 0 = highest priority).
+
+    Safe to run multiple times — formulas overwrite in place. Each run adds one new
+    conditional format rule at index 0; run --fix-pipeline-formatting to clean up
+    accumulated rules if needed.
     """
     def rgb(r, g, b):
         return {"red": r / 255, "green": g / 255, "blue": b / 255}
 
-    # 1. Read Tracker — find (company, title) pairs with status != "Queued"
+    def tab_ref(name):
+        return f"'{name}'" if " " in name else name
+
+    # 1. Find how many data rows are in Pipeline
     try:
         result = sheets.values().get(
-            spreadsheetId=SHEET_ID, range=f"{TAB_TRACKER}!A2:C"
-        ).execute()
-        tracker_rows = result.get("values", [])
-    except Exception as e:
-        print(f"❌ Could not read Tracker: {e}")
-        return
-
-    submitted_keys = set()
-    for row in tracker_rows:
-        if len(row) >= 3:
-            company = row[0].strip().lower()
-            title   = row[1].strip().lower()
-            status  = row[2].strip()
-            if status and status != "Queued":
-                submitted_keys.add((company, title))
-
-    if not submitted_keys:
-        print("ℹ No submitted roles in Tracker (all are Queued or empty).")
-        return
-
-    # 2. Read Pipeline column A:B to find matching rows
-    try:
-        result = sheets.values().get(
-            spreadsheetId=SHEET_ID, range=f"{TAB_PIPELINE}!A2:B"
+            spreadsheetId=SHEET_ID, range=f"{TAB_PIPELINE}!A2:A"
         ).execute()
         pipeline_rows = result.get("values", [])
     except Exception as e:
@@ -424,60 +431,113 @@ def apply_submitted_grayout(sheets):
         return
 
     if not pipeline_rows:
-        print("ℹ Pipeline is empty — nothing to grey out.")
+        print("ℹ Pipeline is empty — nothing to set up.")
         return
 
     sheet_ids = get_sheet_ids(sheets)
     pipeline_id = sheet_ids[TAB_PIPELINE]
 
-    # 3. Write "Y" / "" marker to column I for each Pipeline row
-    markers = []
-    matched = 0
-    for row in pipeline_rows:
-        company = row[0].strip().lower() if len(row) > 0 else ""
-        title   = row[1].strip().lower() if len(row) > 1 else ""
-        if (company, title) in submitted_keys:
-            markers.append(["Y"])
-            matched += 1
-        else:
-            markers.append([""])
+    # 2. Find how many data rows are in Q&A
+    try:
+        qa_result = sheets.values().get(
+            spreadsheetId=SHEET_ID, range=f"{TAB_QA}!A2:A"
+        ).execute()
+        qa_rows = qa_result.get("values", [])
+    except Exception as e:
+        print(f"⚠ Could not read Q&A sheet: {e}")
+        qa_rows = []
 
-    end_row = len(markers) + 1  # +1 for header row
+    qa_id = sheet_ids[TAB_QA]
+    tracker = tab_ref(TAB_TRACKER)
+
+    # 3. Write COUNTIFS formula to Pipeline column I for every data row
+    #    Pipeline: Company=A, Job Title=B → marker in column I (index 8)
+    pipeline_last_row = len(pipeline_rows) + 1  # +1 for header
+    pipeline_formulas = [
+        [f'=COUNTIFS({tracker}!A:A,A{row},{tracker}!B:B,B{row},{tracker}!C:C,"<>Queued")>0']
+        for row in range(2, pipeline_last_row + 1)
+    ]
     sheets.values().update(
         spreadsheetId=SHEET_ID,
-        range=f"{TAB_PIPELINE}!I2:I{end_row}",
-        valueInputOption="RAW",
-        body={"values": markers}
+        range=f"{TAB_PIPELINE}!I2:I{pipeline_last_row}",
+        valueInputOption="USER_ENTERED",
+        body={"values": pipeline_formulas}
     ).execute()
 
-    # 4. Add conditional format rule at index 0 (highest priority — overrides tier colours)
-    dark_grey = rgb(80, 80, 80)
-    light_grey_text = rgb(180, 180, 180)
-    sheets.batchUpdate(spreadsheetId=SHEET_ID, body={"requests": [{
-        "addConditionalFormatRule": {
-            "rule": {
-                "ranges": [{
-                    "sheetId": pipeline_id,
-                    "startRowIndex": 1, "endRowIndex": 2000,
-                    "startColumnIndex": 0, "endColumnIndex": 9
-                }],
-                "booleanRule": {
-                    "condition": {
-                        "type": "CUSTOM_FORMULA",
-                        "values": [{"userEnteredValue": '=$I2="Y"'}]
-                    },
-                    "format": {
-                        "backgroundColor": dark_grey,
-                        "textFormat": {"foregroundColor": light_grey_text}
-                    }
-                }
-            },
-            "index": 0
-        }
-    }]}).execute()
+    # 4. Write COUNTIFS formula to Q&A column J for every data row
+    #    Q&A: Company=A, Job Title=B → marker in column J (index 9, beyond the 9 data cols A–I)
+    if qa_rows:
+        qa_last_row = len(qa_rows) + 1
+        qa_formulas = [
+            [f'=COUNTIFS({tracker}!A:A,A{row},{tracker}!B:B,B{row},{tracker}!C:C,"<>Queued")>0']
+            for row in range(2, qa_last_row + 1)
+        ]
+        sheets.values().update(
+            spreadsheetId=SHEET_ID,
+            range=f"{TAB_QA}!J2:J{qa_last_row}",
+            valueInputOption="USER_ENTERED",
+            body={"values": qa_formulas}
+        ).execute()
 
-    print(f"✅ Greyed out {matched} submitted row(s) in Pipeline.")
-    print(f"   Submitted keys matched: {sorted(submitted_keys)}")
+    # 5. Add conditional format rules at index 0 (highest priority) for both sheets
+    dark_grey       = rgb(80, 80, 80)
+    light_grey_text = rgb(180, 180, 180)
+
+    cf_requests = [
+        # Pipeline: =$I2=TRUE
+        {
+            "addConditionalFormatRule": {
+                "rule": {
+                    "ranges": [{
+                        "sheetId": pipeline_id,
+                        "startRowIndex": 1, "endRowIndex": 2000,
+                        "startColumnIndex": 0, "endColumnIndex": 9
+                    }],
+                    "booleanRule": {
+                        "condition": {
+                            "type": "CUSTOM_FORMULA",
+                            "values": [{"userEnteredValue": "=$I2=TRUE"}]
+                        },
+                        "format": {
+                            "backgroundColor": dark_grey,
+                            "textFormat": {"foregroundColor": light_grey_text}
+                        }
+                    }
+                },
+                "index": 0
+            }
+        },
+        # Q&A: =$J2=TRUE
+        {
+            "addConditionalFormatRule": {
+                "rule": {
+                    "ranges": [{
+                        "sheetId": qa_id,
+                        "startRowIndex": 1, "endRowIndex": 2000,
+                        "startColumnIndex": 0, "endColumnIndex": 10
+                    }],
+                    "booleanRule": {
+                        "condition": {
+                            "type": "CUSTOM_FORMULA",
+                            "values": [{"userEnteredValue": "=$J2=TRUE"}]
+                        },
+                        "format": {
+                            "backgroundColor": dark_grey,
+                            "textFormat": {"foregroundColor": light_grey_text}
+                        }
+                    }
+                },
+                "index": 0
+            }
+        }
+    ]
+    sheets.batchUpdate(spreadsheetId=SHEET_ID, body={"requests": cf_requests}).execute()
+
+    print(f"✅ Live COUNTIFS formulas written:")
+    print(f"   Pipeline column I — {len(pipeline_formulas)} rows")
+    if qa_rows:
+        print(f"   Q&A column J      — {len(qa_formulas)} rows")
+    print(f"   Rows grey out automatically when Tracker status changes from 'Queued'.")
 
 
 # ── Sync Pipeline (Sheet 2) ───────────────────────────────────────────────────
@@ -539,7 +599,7 @@ def sync_tracker(sheets):
 
     try:
         result = sheets.values().get(
-            spreadsheetId=SHEET_ID, range=f"{TAB_TRACKER}!F2:F"
+            spreadsheetId=SHEET_ID, range=f"{TAB_TRACKER}!E2:E"
         ).execute()
         existing_urls = {r[0] for r in result.get("values", []) if r}
     except Exception:
@@ -554,7 +614,6 @@ def sync_tracker(sheets):
             e.get("job_title", ""),
             "Queued",  # default — set to Sent after user submits the application
             str(e.get("application_date", "") or ""),
-            "",      # medium — filled manually
             e.get("url", ""),
             e.get("location", ""),
         ]
@@ -585,12 +644,12 @@ def update_tracker_status(sheets, url, new_status):
         sys.exit(1)
 
     result = sheets.values().get(
-        spreadsheetId=SHEET_ID, range=f"{TAB_TRACKER}!A2:G"
+        spreadsheetId=SHEET_ID, range=f"{TAB_TRACKER}!A2:F"
     ).execute()
     rows = result.get("values", [])
 
     for i, row in enumerate(rows):
-        if len(row) > 5 and row[5] == url:
+        if len(row) > 4 and row[4] == url:
             row_num = i + 2
             sheets.values().update(
                 spreadsheetId=SHEET_ID,
@@ -739,6 +798,7 @@ def sync_qa(sheets, company, job_title, answers_json):
 def main():
     parser = argparse.ArgumentParser(description="job-hunter Google Sheets sync")
     parser.add_argument("--setup",            action="store_true", help="Create sheets, headers, and dropdowns")
+    parser.add_argument("--delete-medium-column",      action="store_true", help="One-time: delete Medium column (E) from Tracker sheet")
     parser.add_argument("--fix-bold",                  action="store_true", help="Remove bold from all data rows")
     parser.add_argument("--fix-pipeline-formatting",   action="store_true", help="Apply tier row colours to Pipeline sheet")
     parser.add_argument("--apply-submitted-grayout",   action="store_true", help="Grey out Pipeline rows where Tracker status is not Queued")
@@ -756,6 +816,8 @@ def main():
 
     if args.setup:
         setup(sheets)
+    elif args.delete_medium_column:
+        delete_medium_column(sheets)
     elif args.fix_bold:
         fix_data_bold(sheets)
     elif args.fix_pipeline_formatting:
