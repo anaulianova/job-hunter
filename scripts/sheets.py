@@ -314,6 +314,7 @@ def setup(sheets):
 
     sheets.batchUpdate(spreadsheetId=SHEET_ID, body={"requests": fmt_requests}).execute()
     _apply_pipeline_row_colors(sheets, pipeline_id)
+    write_postings_formulas(sheets)
 
     print(f"✅ Setup complete.")
     print(f"   Sheet 1 — {TAB_TRACKER}:  {len(TRACKER_HEADERS)} columns + dropdown + colour coding + row highlights")
@@ -540,12 +541,56 @@ def apply_submitted_grayout(sheets):
     print(f"   Rows grey out automatically when Tracker status changes from 'Queued'.")
 
 
+# ── Job Postings formula ─────────────────────────────────────────────────────
+
+def write_postings_formulas(sheets):
+    """Write live auto-status formula to Job Postings!E2:E1000.
+
+    Each cell derives its status from Pipeline Tier (column C) keyed on base URL (column G).
+    Query strings (?utm_source=... etc.) are stripped before matching so tracking params
+    in pasted Job Postings URLs don't break the lookup.
+
+      tier = "skip"  → "Skipped"
+      tier = 1/2/3   → "Evaluated"
+      not in Pipeline → "Pending"
+      empty URL row  → blank
+
+    To manually override (e.g. to "Manual Retrieval"), type the value directly in
+    that cell — it overwrites the formula for that row only.
+    """
+    p = f"'{TAB_PIPELINE}'" if " " in TAB_PIPELINE else TAB_PIPELINE
+    # LEFT(url, FIND("?", url & "?") - 1) strips the query string safely
+    # even when there is no "?" in the URL.
+    strip = 'LEFT({col},FIND("?",{col}&"?")-1)'
+    a_stripped = strip.format(col="A{row}")
+    g_stripped = 'ARRAYFORMULA(' + strip.format(col=f"{p}!G:G") + ')'
+    formula_tpl = (
+        '=IF(A{row}="",'
+        '"",IFERROR(IF(INDEX(' + p + '!C:C,MATCH(' + a_stripped + ',' + g_stripped + ',0))="skip",'
+        '"Skipped","Evaluated"),"Pending"))'
+    )
+    values = [[formula_tpl.format(row=i)] for i in range(2, 1001)]
+    sheets.values().update(
+        spreadsheetId=SHEET_ID,
+        range=f"{TAB_POSTINGS}!E2:E1000",
+        valueInputOption="USER_ENTERED",
+        body={"values": values}
+    ).execute()
+    print(f"✅ Job Postings!E2:E1000 — live auto-status formula written (URL query strings stripped).")
+
+
 # ── Sync Pipeline (Sheet 2) ───────────────────────────────────────────────────
 
 def sync_pipeline(sheets):
-    """Upsert all evaluated roles to Sheet 2 — update existing rows, append new ones."""
+    """Upsert evaluated roles with set tiers to Sheet 2 — update existing rows, append new ones.
+
+    Only entries with a non-null tier are synced. URL fetch failures stay in Job Postings only.
+    """
     pipeline = load_pipeline()
-    evaluated = [e for e in pipeline if e.get("status") not in ("discovered",)]
+    evaluated = [
+        e for e in pipeline
+        if e.get("status") not in ("discovered",) and e.get("tier") is not None
+    ]
 
     if not evaluated:
         print("ℹ No evaluated roles in pipeline yet.")
@@ -611,9 +656,6 @@ def sync_pipeline(sheets):
         print(f"   ↻ Row {row_num}: {row[0]} — {row[1]} — Tier {row[2]}")
     for row in appends:
         print(f"   + {row[0]} — {row[1]} — Tier {row[2]}")
-
-    # Keep Job Postings statuses in sync with pipeline tiers
-    sync_postings_statuses(sheets)
 
 
 # ── Sync Tracker (Sheet 1) ────────────────────────────────────────────────────
@@ -977,7 +1019,8 @@ def main():
     parser.add_argument("--mark-evaluated",   metavar="URL",       help="Mark URL as evaluated in Sheet 3")
     parser.add_argument("--update-status",    nargs=2, metavar=("URL", "STATUS"), help="Update Tracker status")
     parser.add_argument("--update-pipeline-row", metavar="URL", help="Update an existing Pipeline row by URL from pipeline.json")
-    parser.add_argument("--sync-postings-statuses", action="store_true", help="Derive Job Postings statuses from pipeline tier")
+    parser.add_argument("--write-postings-formulas", action="store_true", help="Write live auto-status formula to Job Postings!E (Skipped/Evaluated derived from Pipeline tier)")
+    parser.add_argument("--sync-postings-statuses", action="store_true", help="[deprecated] Manually sync Job Postings statuses from pipeline.json")
     parser.add_argument("--update-postings-dropdown", action="store_true", help="Push current POSTINGS_STATUSES to Job Postings dropdown")
     parser.add_argument("--sync-qa",          nargs=3, metavar=("COMPANY", "TITLE", "ANSWERS_JSON"),
                         help="Push application Q&A answers to Sheet 4")
@@ -1008,6 +1051,8 @@ def main():
         update_tracker_status(sheets, args.update_status[0], args.update_status[1])
     elif args.update_pipeline_row:
         update_pipeline_row(sheets, args.update_pipeline_row)
+    elif args.write_postings_formulas:
+        write_postings_formulas(sheets)
     elif args.sync_postings_statuses:
         sync_postings_statuses(sheets)
     elif args.update_postings_dropdown:
