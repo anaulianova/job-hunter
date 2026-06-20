@@ -781,6 +781,12 @@ def sync_qa(sheets, company, job_title, answers_json):
         answers.get("additional_info", ""),
     ]
 
+    # Find the next row number before appending so we can write the grayout formula
+    existing = sheets.values().get(
+        spreadsheetId=SHEET_ID, range=f"{TAB_QA}!A:A"
+    ).execute()
+    new_row_num = len(existing.get("values", [])) + 1  # 1-indexed; append lands here
+
     sheets.values().append(
         spreadsheetId=SHEET_ID,
         range=f"{TAB_QA}!A1",
@@ -788,6 +794,17 @@ def sync_qa(sheets, company, job_title, answers_json):
         insertDataOption="INSERT_ROWS",
         body={"values": [row]}
     ).execute()
+
+    # Write COUNTIFS grayout formula to column J for the new row
+    tracker = f"'{TAB_TRACKER}'" if " " in TAB_TRACKER else TAB_TRACKER
+    formula = f'=COUNTIFS({tracker}!A:A,A{new_row_num},{tracker}!B:B,B{new_row_num},{tracker}!C:C,"<>Queued")>0'
+    sheets.values().update(
+        spreadsheetId=SHEET_ID,
+        range=f"{TAB_QA}!J{new_row_num}",
+        valueInputOption="USER_ENTERED",
+        body={"values": [[formula]]}
+    ).execute()
+
     _unformat_data_rows(sheets, get_sheet_ids(sheets)[TAB_QA])
 
     print(f"✅ Q&A synced to Sheet 4 — {TAB_QA}: {company} — {job_title}")
