@@ -16,12 +16,23 @@
 
 ---
 
-## Step 1 — Confirm CV
+## Step 1 — Generate and Confirm CV
 
-Check that the tailored CV exists:
-- Look for `cv/record/cv_{company-slug}_{date}.md` and `cv/pdf/{company-slug}_{date}.pdf`
-- If found: "CV ready: `cv/pdf/{company-slug}_{date}.pdf` → rename to `CV_{FirstName}_{LastName}.pdf` before uploading."
-- If not found: "No tailored CV found for this role. Run the CV export first: `uv run scripts/cv_export.py --company {company-slug} --date {date}`"
+Check whether a tailored CV already exists at `app/cv/record/cv_{company-slug}_{date}.md`.
+
+**If found:** proceed to the title consistency check below.
+
+**If not found:** generate and export it now — do not defer to the user:
+
+1. Load `cv.md` (base CV) and the evaluation report from `pipeline/reports/`
+2. Apply all amendments from Point 3 of the evaluation report: About Me rewrite, all bullet rewrites, title variant, subtitle keyword selection
+3. Apply the Airwallex include/exclude decision from Point 4 of the evaluation report
+4. Write the complete tailored CV markdown to `app/cv/record/cv_{company-slug}_{date}.md`
+5. Run `uv run scripts/cv_export.py --company {company-slug} --date {date}` to export to PDF
+6. If the export warns about page count (>1 page): trim content until it fits — do not continue with an oversized CV
+7. Note in the final confirmation: "CV generated and exported: `app/cv/pdf/{company-slug}_{date}.pdf`"
+
+The date to use for the slug is today's date in the format `{mon}{day}` (e.g. `jun29`).
 
 **Title consistency check.** Before confirming the CV, scan `pipeline/pipeline.json` for other non-skipped/non-withdrawn entries at the same company.
 - If any exist: identify the entry with the highest match score and check which title variant was used in its CV amendments (from the evaluation report).
@@ -106,7 +117,7 @@ The Tracker row lands as **Queued** (turquoise). The user fills out and submits 
 Then confirm with a single line:
 
 ```
-[Job Title] at [Company] queued. Q&A in Sheet 4, application ready in Sheet 1. Ask me to pull up any answer to review, or say "mark [company] as sent" once you've submitted.
+[Job Title] at [Company] queued. CV at app/cv/pdf/{company-slug}_{date}.pdf — rename to CV_FirstName_LastName.pdf before uploading. Q&A in Sheet 4, Tracker updated. Ask me to pull up any answer to review, or say "mark [company] as sent" once you've submitted.
 ```
 
 The user can then ask to see and refine individual answers in conversation.
@@ -148,14 +159,15 @@ Enter numbers to include (e.g. 1,3) or 'all':
 **Step 2 — Process each role in sequence.**
 For each selected role, run silently:
 
-1. Generate Q&A answers (Step 2 rules — tier handling, voice and tone rules all apply per role)
-2. Spawn isolated reviewer (Step 2b) — pass only JD + answers, no profile
-3. Apply reviewer revisions
-4. Sync answers to Sheet 4: `uv run scripts/sheets.py --sync-qa ...`
-5. Update `pipeline.json` status → `applied`, set `application_date` to today
-6. Sync to Sheet 1: `uv run scripts/sheets.py --sync-tracker` — row lands as `Queued`
+1. Generate tailored CV if not already present (Step 1 rules — apply amendments, write markdown, export PDF)
+2. Generate Q&A answers (Step 2 rules — tier handling, voice and tone rules all apply per role)
+3. Spawn isolated reviewer (Step 2b) — pass only JD + answers, no profile
+4. Apply reviewer revisions
+5. Sync answers to Sheet 4: `uv run scripts/sheets.py --sync-qa ...`
+6. Update `pipeline.json` status → `applied`, set `application_date` to today
+7. Sync to Sheet 1: `uv run scripts/sheets.py --sync-tracker` — row lands as `Queued`
 
-Do not pause for confirmation between roles. If a tailored CV is missing for a role, note it in the summary but continue processing.
+Do not pause for confirmation between roles.
 
 **Step 3 — Summary table.**
 After all roles are processed, output a single summary:
@@ -165,10 +177,11 @@ Batch complete — N applications prepared and synced to Sheets.
 
 Company        Title                        Tier  Q&A  CV
 ────────────────────────────────────────────────────────────────
-Anthropic      Data Scientist, Safeguards    1     ✓    Tailored CV found
-Stripe         Product Manager, Capital      2     ✓    No tailored CV — export first
-Coinbase       Payments Risk Analyst II      2     ✓    Tailored CV found
+Anthropic      Data Scientist, Safeguards    1     ✓    ✓ Generated + exported
+Stripe         Product Manager, Capital      2     ✓    ✓ Already existed
+Coinbase       Payments Risk Analyst II      2     ✓    ✓ Generated + exported
 
+Rename each PDF to CV_FirstName_LastName.pdf before uploading.
 Ask me to pull up any answer if you want to review or improve it.
 ```
 
