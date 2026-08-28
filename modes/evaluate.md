@@ -185,7 +185,8 @@ Next step: Review CV amendments above, update your CV, then run /track to log th
 ## Post-Evaluation Actions
 
 1. Save full report to `pipeline/reports/{company_slug}_{YYYY-MM-DD}.md`
-2. Add/update entry in `pipeline/pipeline.json`:
+2. If the JD was loaded from a file in `jds/`: move the file to `jds/evaluated/` after evaluation completes. Use `mv jds/{filename} jds/evaluated/{filename}`. Do this even for UNSUITABLE/SKIP outcomes — the file has been processed regardless of result.
+3. Add/update entry in `pipeline/pipeline.json`:
 ```json
 {
   "company": "",
@@ -227,4 +228,10 @@ Next step: Review CV amendments above, update your CV, then run /track to log th
    - If the current role scores **higher** (or this is the first entry at the company): choose the variant normally per `permitted_title_variants` rules, and document the choice in the report so all future applications to this company lock to it.
    - If the current role **ties**: use the variant that best fits the current JD — document the choice and apply it retroactively as the lock for the company.
 
-5. Ask: "Would you like me to draft a cover letter for this role?" (Tier 1 only)
+5. Run `uv run scripts/sheets.py --sync-pipeline` to push the new entry to Sheet 2 — Pipeline.
+6. **Job Postings status sync.** If the JD was loaded from a file in `jds/`, run:
+   ```
+   uv run scripts/sheets.py --update-postings-status "{company}" "{job_title}" "{Evaluated|Skipped}"
+   ```
+   Use `Evaluated` for SUITABLE/STRETCH outcomes (any tier), `Skipped` for UNSUITABLE/SKIP outcomes. This updates the Job Postings sheet for roles that were added via URL scan but fetched manually due to a login wall. If the role is not in Job Postings, the command prints a notice and exits cleanly — no error.
+7. Ask: "Would you like me to draft a cover letter for this role?" (Tier 1 only)

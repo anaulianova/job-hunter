@@ -73,6 +73,14 @@ Load `config/question_bank.json`. For each question, apply the tier rule:
 | Why this company | ask_user | personalise | standard |
 | Note to hiring manager | ask_user | personalise | standard |
 | Additional info | personalise | standard | boilerplate (blank) |
+| Why this industry (adapt per company) | ask_user | ask_user | personalise |
+| Comfort zone / struggle | ask_user | ask_user | personalise |
+| Most impactful project | ask_user | personalise | standard |
+| How did you know it worked | ask_user | personalise | standard |
+
+`why_this_industry`, `comfort_zone_struggle` and `most_impactful_project` are generated for every application. They appear in columns J, K and L of the App Q&A sheet. `excites_you`, `why_role_and_fit` and `how_did_you_know_it_worked` land in M, N and O.
+
+`most_impactful_project` has three non-negotiable requirements at every tier: adapt the project description so it echoes the JD, state her specific personal contribution, and give outcome criteria that evidence the impact. Never invent metrics. See the question's `notes` in `config/question_bank.json`. At Tier 1 and 2, ask the user for their angle before generating. At Tier 3, generate from the JD and profile. `why_this_industry` must be RE-POINTED at the company's own industry before answering: 'Why AI audio?', 'Why marketplaces?', 'Why payments?'. It is only a public-markets question when the company is actually an investment firm. Never open the answer by noting her background is in markets rather than the asked domain; that answers the wrong question and reads as a deflection. Draw the genuine thread from her background into that industry instead.
 
 ---
 
@@ -102,6 +110,19 @@ An in-context reviewer has the applicant's profile and background in its context
 
 The reviewer returns the complete revised Q&A as a JSON object. Apply those revisions silently. Do not surface the reviewer's changes or notes to the user at any point — only the final revised answers enter the sync step.
 
+### Fact-check the reviewer's revisions before syncing
+
+The reviewer has the JD but **not** the profile, so it optimises for JD relevance with no way to tell a true claim from a plausible one. It will sometimes sharpen a phrase into a factual overstatement — narrowing a general skill into the specific one the JD asks for, or attaching a domain the user has never worked in.
+
+Before syncing, diff the revised answers against the drafted answers and check every changed noun phrase against the profile and CV. Revert any revision that:
+- adds a domain, asset class, tool, or credential the user does not have
+- converts a general claim into a more specific one that is no longer accurate
+- upgrades scope, seniority, or ownership beyond what the evaluation report supports
+
+Observed example (2026-08-27, a credit trading desk role): the reviewer rewrote "designed a risk methodology" as "designed a **credit** risk methodology" because the JD is a credit desk. A.R.I.A. rated crypto issuer risk, not credit. Caught and reverted before sync.
+
+Accuracy always beats the reviewer's judgement on relevance. Keep the reviewer's structural and tone fixes; revert its factual drift.
+
 ---
 
 ## Step 3 — Sync directly to Google Sheets
@@ -110,7 +131,7 @@ Do not show the answers to the user before syncing. Run silently:
 
 1. Call `uv run scripts/sheets.py --sync-qa "[company]" "[job_title]" "[answers_json]"` to push answers to Sheet 4
 2. Update `pipeline.json` status → `applied`, set `application_date` to today
-3. Call `uv run scripts/sheets.py --sync-tracker` to push to Sheet 1 with status `Queued`
+3. Call `uv run scripts/sheets.py --smart-sync-tracker` to sync Sheet 1 (pulls sheet → json, then pushes new row as `Queued`)
 
 The Tracker row lands as **Queued** (turquoise). The user fills out and submits the application manually, then updates the status to **Sent** — either by editing the dropdown in the sheet directly, or by asking: "mark [company] as sent".
 
@@ -165,7 +186,7 @@ For each selected role, run silently:
 4. Apply reviewer revisions
 5. Sync answers to Sheet 4: `uv run scripts/sheets.py --sync-qa ...`
 6. Update `pipeline.json` status → `applied`, set `application_date` to today
-7. Sync to Sheet 1: `uv run scripts/sheets.py --sync-tracker` — row lands as `Queued`
+7. Sync to Sheet 1: `uv run scripts/sheets.py --smart-sync-tracker` — new row lands as `Queued`; also pulls any sheet deletions back into pipeline.json
 
 Do not pause for confirmation between roles.
 
