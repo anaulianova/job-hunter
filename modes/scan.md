@@ -39,7 +39,7 @@ If no new roles found: "No new roles matching your profile found today. Targets 
 
 User provides one or more URLs:
 ```
-/scan https://boards.greenhouse.io/stripe/jobs/12345
+/scan https://boards.greenhouse.io/{company-slug}/jobs/12345
 /scan url1, url2, url3
 ```
 

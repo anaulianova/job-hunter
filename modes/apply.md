@@ -26,7 +26,7 @@ Check whether a tailored CV already exists at `app/cv/record/cv_{company-slug}_{
 
 1. Load `cv.md` (base CV) and the evaluation report from `pipeline/reports/`
 2. Apply all amendments from Point 3 of the evaluation report: About Me rewrite, all bullet rewrites, title variant, subtitle keyword selection
-3. Apply the Airwallex include/exclude decision from Point 4 of the evaluation report
+3. Apply the sensitive-role include/exclude decisions from Point 4 of the evaluation report
 4. Write the complete tailored CV markdown to `app/cv/record/cv_{company-slug}_{date}.md`
 5. Run `uv run scripts/cv_export.py --company {company-slug} --date {date}` to export to PDF
 6. If the export warns about page count (>1 page): trim content until it fits — do not continue with an oversized CV
@@ -119,7 +119,7 @@ Before syncing, diff the revised answers against the drafted answers and check e
 - converts a general claim into a more specific one that is no longer accurate
 - upgrades scope, seniority, or ownership beyond what the evaluation report supports
 
-Observed example (2026-08-27, a credit trading desk role): the reviewer rewrote "designed a risk methodology" as "designed a **credit** risk methodology" because the JD is a credit desk. A.R.I.A. rated crypto issuer risk, not credit. Caught and reverted before sync.
+Observed example (2026-08-27, a credit trading desk role): the reviewer rewrote "designed a risk methodology" as "designed a **credit** risk methodology" because the JD was for a credit desk. The user's business rated a different kind of risk entirely. Caught and reverted before sync.
 
 Accuracy always beats the reviewer's judgement on relevance. Keep the reviewer's structural and tone fixes; revert its factual drift.
 
@@ -170,9 +170,9 @@ Read `pipeline/pipeline.json`. Collect all entries where:
 Display as a numbered list:
 ```
 Roles ready to apply (N total):
-[1] Anthropic — Data Scientist, Safeguards — Tier 1
-[2] Stripe — Product Manager, Capital — Tier 2
-[3] Coinbase — Payments Risk Analyst II — Tier 2
+[1] Company A — Data Scientist, Safeguards — Tier 1
+[2] Company B — Product Manager, Capital — Tier 2
+[3] Company C — Payments Risk Analyst II — Tier 2
 
 Enter numbers to include (e.g. 1,3) or 'all':
 ```
@@ -198,9 +198,9 @@ Batch complete — N applications prepared and synced to Sheets.
 
 Company        Title                        Tier  Q&A  CV
 ────────────────────────────────────────────────────────────────
-Anthropic      Data Scientist, Safeguards    1     ✓    ✓ Generated + exported
-Stripe         Product Manager, Capital      2     ✓    ✓ Already existed
-Coinbase       Payments Risk Analyst II      2     ✓    ✓ Generated + exported
+Company A      Data Scientist, Safeguards    1     ✓    ✓ Generated + exported
+Company B      Product Manager, Capital      2     ✓    ✓ Already existed
+Company C      Payments Risk Analyst II      2     ✓    ✓ Generated + exported
 
 Rename each PDF to CV_FirstName_LastName.pdf before uploading.
 Ask me to pull up any answer if you want to review or improve it.

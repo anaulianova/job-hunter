@@ -5,7 +5,7 @@ and returns new roles matching the user's profile keywords and locations.
 
 Usage:
     python scripts/scan.py                    # scan all targets
-    python scripts/scan.py --company stripe   # scan one company
+    python scripts/scan.py --company acme     # scan one company
     python scripts/scan.py --dry-run          # show matches without saving
 """
 

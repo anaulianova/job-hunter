@@ -12,7 +12,7 @@ uv run scripts/cv_export.py --company elliptic-da --date jun18
 # Looks for: app/cv/record/cv_elliptic-da_jun18.md → falls back to cv.md
 # Outputs:   app/cv/pdf/elliptic-da_jun18.pdf
 
-uv run scripts/cv_export.py --input path/to/file.md --company stripe --date jun17
+uv run scripts/cv_export.py --input path/to/file.md --company example-company --date jun17
 # Explicit source file
 ```
 

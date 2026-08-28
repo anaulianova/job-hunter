@@ -18,7 +18,7 @@ Three ways to provide a job description, in order of preference:
 > "Couldn't load this page — copy the job description text and paste it here, or save it to `jds/{company}.txt` and run `/evaluate jds/{company}.txt`."
 Never silently skip or log "unable to fetch" without telling the user.
 
-**`jds/` folder:** Save JD text files here for roles where the URL can't be scraped (LinkedIn, OpenAI, SWIFT, etc.). Filename convention: `{company}.txt` or `{company}_{role-slug}.txt`.
+**`jds/` folder:** Save JD text files here for roles where the URL can't be scraped (LinkedIn, sites that block fetchers, login-walled boards). Filename convention: `{company}.txt` or `{company}_{role-slug}.txt`.
 
 ---
 
@@ -211,7 +211,7 @@ Next step: Review CV amendments above, update your CV, then run /track to log th
    - Flag a **multi-application risk** in the evaluation output under the Summary if any of the following apply:
      - One of the roles is Tier 1 (applying to multiple roles may dilute the strength of that application and signal lack of clarity to the hiring team)
      - The company is small or mid-size (estimated <500 employees) and the roles are in the same geography and same functional area — likely one hiring manager team reviewing both applications
-   - Do **not** flag a risk if the company is large (e.g. Barclays, EY, Stripe, Coinbase, Databricks), or if the roles are in different geographies, or if they are clearly separate functions (e.g. policy vs. data science).
+   - Do **not** flag a risk if the company is large (a major bank, consultancy or established tech firm), or if the roles are in different geographies, or if they are clearly separate functions (e.g. policy vs. data science).
 
    **Risk flag format** (append to Summary block if triggered):
    ```

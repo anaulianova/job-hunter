@@ -46,40 +46,40 @@ companies:
   # Replace with companies relevant to your search.
   # Find the Greenhouse slug by visiting: boards.greenhouse.io/{slug}
 
-  - name: Stripe
+  - name: Example Payments Co
     ats: greenhouse
-    api_url: https://boards-api.greenhouse.io/v1/boards/stripe/jobs
-    career_url: https://stripe.com/jobs
+    api_url: https://boards-api.greenhouse.io/v1/boards/{greenhouse-slug}/jobs
+    career_url: https://example-payments.com/jobs
     priority: tier1
 
-  - name: Databricks
+  - name: Example Data Platform
     ats: greenhouse
-    api_url: https://boards-api.greenhouse.io/v1/boards/databricks/jobs
-    career_url: https://www.databricks.com/company/careers
+    api_url: https://boards-api.greenhouse.io/v1/boards/{greenhouse-slug}/jobs
+    career_url: https://example-data.com/careers
     priority: tier2
 
   # ── Example: Lever ATS ────────────────────────────────────────────────────
 
-  - name: Palantir
+  - name: Example Analytics Co
     ats: lever
-    lever_slug: palantir
-    career_url: https://www.palantir.com/careers
+    lever_slug: {lever-slug}
+    career_url: https://example-analytics.com/careers
     priority: tier2
 
   # ── Example: Manual (private board or login-walled) ───────────────────────
   # Set ats: manual for LinkedIn-only postings, private Greenhouse boards,
   # or any company where the URL requires a login.
 
-  - name: OpenAI
+  - name: Example AI Lab
     ats: manual
-    career_url: https://openai.com/careers
+    career_url: https://example-ai-lab.com/careers
     priority: tier1
-    note: career page blocks scrapers — check manually or save JD to jds/openai.txt
+    note: career page blocks scrapers — check manually or save JD to jds/example-ai-lab.txt
 
-  - name: Anthropic
+  - name: Example Research Lab
     ats: greenhouse
-    api_url: https://boards-api.greenhouse.io/v1/boards/anthropic/jobs
-    career_url: https://www.anthropic.com/careers
+    api_url: https://boards-api.greenhouse.io/v1/boards/{greenhouse-slug}/jobs
+    career_url: https://example-research.com/careers
     priority: tier1
 
   # Add your own companies below. Run /targets to generate this file

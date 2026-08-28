@@ -73,7 +73,7 @@ Generate:
 Regardless of stage, generate 3–5 STAR stories from the user's experience that are versatile across common behavioural questions:
 
 ```
-STORY: [Title — e.g. "Founding A.R.I.A. and closing VARA"]
+STORY: [Title — e.g. "Founding the company and closing the first major client"]
 BEST FOR: [list of question types this story answers]
 SITUATION: [1–2 sentences]
 TASK: [1 sentence]
