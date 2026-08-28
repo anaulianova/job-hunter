@@ -33,7 +33,7 @@
         "3": "standard"
       },
       "boilerplate": null,
-      "notes": "Must reference something specific to the company — product, mission, a recent decision, a specific team. Never generic ('fast-growing company', 'exciting space'). 3–4 sentences max. For Tier 1: ask the user what angle they want before generating."
+      "notes": "Must reference something specific to THIS company — a product, a recent shift in what they sell, a market position, a specific team. Never generic ('fast-growing company', 'exciting space'). 3-4 sentences max. ⚠ THE ANSWER MUST BE ABOUT THE COMPANY, NOT ABOUT HER. A common failure is writing a fit answer here: listing her own skills and experience and never actually naming why this company, now. If the answer would still make sense with the company name swapped out, it is wrong. Her background belongs in why_role_and_fit; this question is 'why you, this company, and why now'. For Tier 1: ask the user what angle they want before generating."
     },
     {
       "id": "note_to_hiring_manager",
@@ -45,6 +45,72 @@
       },
       "boilerplate": null,
       "notes": "2–3 sentences. Not a cover letter, not a CV summary. Lead with the specific fit between the user's background and this role's core problem. Tone: direct, confident, concise. For Tier 1: ask user for their angle first."
+    },
+    {
+      "id": "excites_you",
+      "label": "What excites you about working at [Company]?",
+      "tier_handling": {
+        "1": "ask_user",
+        "2": "personalise",
+        "3": "standard"
+      },
+      "boilerplate": null,
+      "notes": "1–2 sentences max. Must name something specific to the company — their product, their market position, or the scale/problem they operate at. Lead with what the user has done that makes this company's specific work compelling. Never use generic enthusiasm ('exciting space', 'fast-growing'). Distinct from why_company: this question is about excitement/motivation, not fit — answer should feel personal and earned."
+    },
+    {
+      "id": "why_role_and_fit",
+      "label": "Why are you interested in this role, and what makes you a good fit?",
+      "tier_handling": {
+        "1": "ask_user",
+        "2": "personalise",
+        "3": "standard"
+      },
+      "boilerplate": null,
+      "notes": "Combines role motivation and fit justification in one answer. Lead with what specifically draws them to this role — not the company broadly, but the specific work. Then substantiate fit with 2-3 concrete experience points. Never write 'I would be a great fit because' — let the evidence carry it. 3-4 sentences max. At Tier 1, ask for the angle before generating."
+    },
+    {
+      "id": "why_this_industry",
+      "label": "Why [this company's industry/domain]? (adapt the question to the company)",
+      "tier_handling": {
+        "1": "ask_user",
+        "2": "ask_user",
+        "3": "personalise"
+      },
+      "boilerplate": null,
+      "notes": "250 word limit. ⚠ This question is NOT about public markets investing. It asks why she is drawn to THIS COMPANY'S industry or domain, and the question must be re-pointed per application before it is answered: 'Why AI audio?' for a voice AI company, 'Why marketplaces?' for a marketplace, 'Why payments?' for a payments company, 'Why public markets investing?' only when the company actually is an investment firm. Never answer a markets question at a non-markets company and never open with a disclaimer that her background is in markets rather than the asked domain — that answers the wrong question and reads as a deflection. Draw the genuine thread from her background INTO that industry rather than apologising for the distance. Always ask_user at Tier 1 and 2 for the angle."
+    },
+    {
+      "id": "comfort_zone_struggle",
+      "label": "Describe a time you stepped outside your comfort zone professionally and struggled. How did you respond?",
+      "tier_handling": {
+        "1": "ask_user",
+        "2": "ask_user",
+        "3": "personalise"
+      },
+      "boilerplate": null,
+      "notes": "250 word limit. Requires user context — always ask_user at Tier 1 and 2. Must describe a genuine struggle, not a sanitised success story. Show the specific discomfort, the adaptive response, and what was learned. Close with a lesson that ties back to the target role where possible. Sheet column: K."
+    },
+    {
+      "id": "most_impactful_project",
+      "label": "What's the most impactful thing/project you've built?",
+      "tier_handling": {
+        "1": "ask_user",
+        "2": "personalise",
+        "3": "standard"
+      },
+      "boilerplate": null,
+      "notes": "Default to A.R.I.A. Ratings unless a different project fits the JD better. Three requirements at every tier: (1) ADAPT the description of the project so it echoes the JD — lead with the facet of the build that matches what this role actually does, not a generic summary of the project. (2) STATE THE SPECIFIC CONTRIBUTION — what she personally designed, built or decided, not what 'the team' or 'the company' did. As a solo founder this is nearly everything, but name the parts rather than implying scale she did not have. (3) GIVE SUCCESS OR OUTCOME CRITERIA that show impact — what changed, who paid, what it survived, what it replaced. Use only verifiable facts (e.g. closed a national regulator as a paying client; converted a judgment-based process into a documented framework). Never invent metrics, percentages or revenue figures. If the honest outcome is mixed, say so — A.R.I.A. closed in Dec 2025 and that is defensible when framed as what the build proved rather than what the company became. 4-6 sentences."
+    },
+    {
+      "id": "how_did_you_know_it_worked",
+      "label": "How did you know it worked? What did success actually look like?",
+      "tier_handling": {
+        "1": "ask_user",
+        "2": "personalise",
+        "3": "standard"
+      },
+      "boilerplate": null,
+      "notes": "Follow-up to most_impactful_project and must reference the SAME project. Give the evidence that the build worked, not a restatement of what it was. Use only verifiable facts: who paid, what it survived, what it replaced, what test she set herself. NEVER invent metrics, percentages, revenue, user counts or time savings — she has no quantified outcomes and fabricating them is the fastest way to lose an interview. The strongest available evidence for A.R.I.A. is that a national financial regulator became a paying client after reviewing the methodology in detail, which is adversarial validation rather than a testimonial. Always include the honest counterweight that the company did not survive; it costs nothing and buys credibility for everything else in the answer. 5-8 sentences."
     },
     {
       "id": "additional_info",
