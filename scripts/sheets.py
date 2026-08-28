@@ -19,10 +19,11 @@ Setup (one-time):
        GOOGLE_SHEETS_TAB_QA=App Q&A
 
 Usage:
-  python scripts/sheets.py --setup              # create sheets, headers, dropdowns
-  python scripts/sheets.py --sync-pipeline      # push evaluated roles → Sheet 2
-  python scripts/sheets.py --sync-tracker       # push applied roles → Sheet 1
-  python scripts/sheets.py --get-pending-urls   # print pending URLs from Sheet 3
+  python scripts/sheets.py --setup                # create sheets, headers, dropdowns
+  python scripts/sheets.py --sync-pipeline        # push evaluated roles → Sheet 2
+  python scripts/sheets.py --smart-sync-tracker   # pull sheet → json, then push new rows → Sheet 1
+  python scripts/sheets.py --sync-tracker         # [deprecated] push applied roles → Sheet 1
+  python scripts/sheets.py --get-pending-urls     # print pending URLs from Sheet 3
   python scripts/sheets.py --mark-evaluated URL # mark URL as evaluated in Sheet 3
   python scripts/sheets.py --update-status URL STATUS  # update Tracker status
   python scripts/sheets.py --sync-qa COMPANY TITLE ANSWERS_JSON  # push Q&A → Sheet 4
@@ -30,6 +31,7 @@ Usage:
 
 import json
 import os
+import re
 import sys
 import argparse
 from pathlib import Path
@@ -59,9 +61,19 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 # ── Column definitions ────────────────────────────────────────────────────────
 
-TRACKER_HEADERS  = ["Company", "Job Title", "Status", "Application Date", "URL", "Location"]
+TRACKER_HEADERS  = ["Company", "Job Title", "Status", "Application Date", "URL", "Location", "Notes"]
+SHEET_TO_PIPELINE_STATUS = {
+    "queued":           "applied",
+    "sent":             "applied",
+    "first screening":  "screening",
+    "interview":        "interview",
+    "case study":       "interview",
+    "rejected":         "rejected",
+    "silent rejection": "rejected",
+    "offer":            "offer",
+}
 TRACKER_COLS     = ["company", "job_title", "status", "application_date", "url", "location"]
-TRACKER_STATUSES = ["Queued", "Sent", "First Screening", "Interview", "Case Study", "Rejected", "Silent Rejection", "Offer"]
+TRACKER_STATUSES = ["Queued", "Sent", "Hold", "First Screening", "Interview", "Case Study", "Rejected", "Silent Rejection", "Offer"]
 
 PIPELINE_HEADERS = ["Company", "Job Title", "Tier", "Match Score", "Evaluated Date", "Location", "URL", "Notes"]
 PIPELINE_COLS    = ["company", "job_title", "tier", "match_score", "evaluated_date", "location", "url", "notes"]
@@ -72,7 +84,10 @@ POSTINGS_STATUSES = ["Pending", "Manual Retrieval", "Evaluated", "Skipped"]
 QA_HEADERS = [
     "Company", "Job Title", "Tier", "Date",
     "Salary (free text)", "Salary (number)",
-    "Why this company", "Note to hiring manager", "Anything additional"
+    "Why this company", "Note to hiring manager", "Anything additional",
+    "Why this industry?", "Stepped outside comfort zone",
+    "Most impactful project", "What excites you", "Why this role and fit",
+    "How did you know it worked", "Applied?"
 ]
 
 
@@ -227,10 +242,12 @@ def setup(sheets):
     # Row-level rules added first (lower priority); cell rules added after
     # (each "index: 0" insert shifts previous rules down, so later = higher priority)
 
-    # Tracker: grey out entire row for Rejected and Silent Rejection
+    # Tracker: full-row highlights driven by Status (col C).
+    # Hold = yellow (waiting on an external unblock: a referral, a portfolio piece, an earlier
+    # application at the same company). Rejected / Silent Rejection = muted red, closed out.
     for formula, bg in [
-        ('=$C2="Silent Rejection"', rgb(245, 245, 245)),  # very light grey
-        ('=$C2="Rejected"',         rgb(224, 224, 224)),  # medium grey
+        ('=OR($C1="Rejected", $C1="Silent Rejection")', rgb(244, 204, 204)),  # muted red
+        ('=$C1="Hold"',                                 rgb(255, 249, 196)),  # yellow
     ]:
         fmt_requests.append({
             "addConditionalFormatRule": {
@@ -238,7 +255,7 @@ def setup(sheets):
                     "ranges": [{
                         "sheetId": tracker_id,
                         "startRowIndex": 1, "endRowIndex": 1000,
-                        "startColumnIndex": 0, "endColumnIndex": 6
+                        "startColumnIndex": 0, "endColumnIndex": 25
                     }],
                     "booleanRule": {
                         "condition": {
@@ -252,37 +269,11 @@ def setup(sheets):
             }
         })
 
-    # Tracker: status cell colours (col C — added after row rules → higher priority)
-    tracker_cell_colors = [
-        ("Queued",           rgb(178, 235, 242)),  # turquoise
-        ("Sent",             rgb(252, 228, 236)),  # pink
-        ("First Screening",  rgb(255, 249, 196)),  # yellow
-        ("Interview",        rgb(187, 222, 251)),  # blue
-        ("Case Study",       rgb(255, 224, 178)),  # orange
-        ("Rejected",         rgb(255, 205, 210)),  # red
-        ("Silent Rejection", rgb(189, 189, 189)),  # dark grey
-        ("Offer",            rgb(200, 230, 201)),  # green
-    ]
-    for status, color in tracker_cell_colors:
-        fmt_requests.append({
-            "addConditionalFormatRule": {
-                "rule": {
-                    "ranges": [{
-                        "sheetId": tracker_id,
-                        "startRowIndex": 1, "endRowIndex": 1000,
-                        "startColumnIndex": 2, "endColumnIndex": 3
-                    }],
-                    "booleanRule": {
-                        "condition": {
-                            "type": "TEXT_EQ",
-                            "values": [{"userEnteredValue": status}]
-                        },
-                        "format": {"backgroundColor": color}
-                    }
-                },
-                "index": 0
-            }
-        })
+    # Tracker: status colours live on the dropdown chips, set in the Sheets UI.
+    # The v4 API cannot write dropdown chip colours, so there are deliberately no
+    # per-status conditional format rules on column C here. Setting them in code would
+    # recreate rules that were removed on purpose and would fight the chip styling.
+    # See the manual step printed at the end of setup.
 
     # Job Postings: status cell colours (col E = index 4)
     postings_cell_colors = [
@@ -317,7 +308,13 @@ def setup(sheets):
     write_postings_formulas(sheets)
 
     print(f"✅ Setup complete.")
-    print(f"   Sheet 1 — {TAB_TRACKER}:  {len(TRACKER_HEADERS)} columns + dropdown + colour coding + row highlights")
+    print(f"   Sheet 1 — {TAB_TRACKER}:  {len(TRACKER_HEADERS)} columns + dropdown + row highlights")
+    print()
+    print("   ⚠ ONE MANUAL STEP: Tracker status colours are dropdown chip colours, which the")
+    print("     Sheets API cannot set. In the sheet, click a cell in Status, open the dropdown")
+    print("     editor and assign a colour per option. Suggested:")
+    print("       Queued turquoise · Sent pink · Hold yellow · First Screening yellow")
+    print("       Interview blue · Case Study orange · Rejected red · Silent Rejection grey · Offer green")
     print(f"   Sheet 2 — {TAB_PIPELINE}: {len(PIPELINE_HEADERS)} columns")
     print(f"   Sheet 3 — {TAB_POSTINGS}: {len(POSTINGS_HEADERS)} columns + dropdown + colour coding")
     print(f"   Sheet 4 — {TAB_QA}:       {len(QA_HEADERS)} columns")
@@ -612,10 +609,14 @@ def sync_pipeline(sheets):
         url = row[6].strip() if len(row) > 6 else ""
         company = row[0].strip() if len(row) > 0 else ""
         title = row[1].strip() if len(row) > 1 else ""
-        if url:
+        # Only index real URLs — placeholder strings like "LinkedIn EasyApply"
+        # are not unique and would cause multiple entries to collide on the same row.
+        if url and url.startswith("http"):
             url_to_row[url] = row_num
         if company and title:
             ct_to_row[(company.lower(), title.lower())] = row_num
+
+    first_new_row = len(existing_rows) + 2  # row 1 = header; new appends land here
 
     updates = []
     appends = []
@@ -625,19 +626,23 @@ def sync_pipeline(sheets):
         company = (e.get("company", "") or "").lower()
         title = (e.get("job_title", "") or "").lower()
 
-        if url and url in url_to_row:
+        if url and url.startswith("http") and url in url_to_row:
             updates.append((url_to_row[url], row_data))
         elif (company, title) in ct_to_row:
             updates.append((ct_to_row[(company, title)], row_data))
         else:
             appends.append(row_data)
 
-    for row_num, row_data in updates:
-        sheets.values().update(
+    if updates:
+        sheets.values().batchUpdate(
             spreadsheetId=SHEET_ID,
-            range=f"{TAB_PIPELINE}!A{row_num}",
-            valueInputOption="RAW",
-            body={"values": [row_data]}
+            body={
+                "valueInputOption": "RAW",
+                "data": [
+                    {"range": f"{TAB_PIPELINE}!A{row_num}", "values": [row_data]}
+                    for row_num, row_data in updates
+                ]
+            }
         ).execute()
 
     if appends:
@@ -650,6 +655,26 @@ def sync_pipeline(sheets):
         ).execute()
 
     _unformat_data_rows(sheets, get_sheet_ids(sheets)[TAB_PIPELINE])
+
+    # Write column I COUNTIFS grayout formula for every synced row
+    tracker = f"'{TAB_TRACKER}'" if " " in TAB_TRACKER else TAB_TRACKER
+    formula_data = []
+    for row_num, _ in updates:
+        formula_data.append({
+            "range": f"{TAB_PIPELINE}!I{row_num}",
+            "values": [[f'=COUNTIFS({tracker}!A:A,A{row_num},{tracker}!B:B,B{row_num},{tracker}!C:C,"<>Queued")>0']]
+        })
+    for i in range(len(appends)):
+        row_num = first_new_row + i
+        formula_data.append({
+            "range": f"{TAB_PIPELINE}!I{row_num}",
+            "values": [[f'=COUNTIFS({tracker}!A:A,A{row_num},{tracker}!B:B,B{row_num},{tracker}!C:C,"<>Queued")>0']]
+        })
+    if formula_data:
+        sheets.values().batchUpdate(
+            spreadsheetId=SHEET_ID,
+            body={"valueInputOption": "USER_ENTERED", "data": formula_data}
+        ).execute()
 
     print(f"✅ Pipeline sync: {len(updates)} updated, {len(appends)} added.")
     for row_num, row in updates:
@@ -706,6 +731,108 @@ def sync_tracker(sheets):
     _unformat_data_rows(sheets, get_sheet_ids(sheets)[TAB_TRACKER])
 
     print(f"✅ Synced {len(new_rows)} roles to Sheet 1 — {TAB_TRACKER}.")
+
+
+# ── Smart Sync Tracker (Sheet 1) ─────────────────────────────────────────────
+
+def smart_sync_tracker(sheets):
+    """Pull-then-push sync for Tracker sheet. Replaces --sync-tracker in /apply flow.
+
+    Pull phase — sheet is authoritative for all entries with application_date:
+      - Found in sheet → update pipeline.json status to match sheet; mark tracker_synced=True
+      - Not in sheet + tracker_synced=True → user deleted the row → remove from pipeline.json
+      - Not in sheet + no tracker_synced flag → never pushed before → push to sheet as Queued
+
+    Push phase — new rows appended to Tracker (only entries not already present).
+
+    This prevents the re-add bug: once tracker_synced=True, deletion from sheet
+    is treated as authoritative removal, not a push target.
+    """
+    pipeline = load_pipeline()
+
+    # Read Tracker sheet
+    try:
+        result = sheets.values().get(
+            spreadsheetId=SHEET_ID, range=f"{TAB_TRACKER}!A2:F"
+        ).execute()
+        tracker_rows = result.get("values", [])
+    except Exception as e:
+        print(f"❌ Could not read Tracker: {e}")
+        return
+
+    # Build lookup: (company.lower(), title.lower()) → {status, row_num}
+    sheet_lookup = {}
+    for i, row in enumerate(tracker_rows):
+        if not row:
+            continue
+        company = (row[0].strip() if len(row) > 0 else "").lower()
+        title   = (row[1].strip() if len(row) > 1 else "").lower()
+        status  = row[2].strip() if len(row) > 2 else ""
+        if company and title:
+            sheet_lookup[(company, title)] = {"status": status, "row_num": i + 2}
+
+    kept = []
+    new_rows = []
+    updated_count = 0
+    removed_count = 0
+
+    for entry in pipeline:
+        # Only manage entries that have reached application stage
+        if entry.get("application_date") is None:
+            kept.append(entry)
+            continue
+
+        key = (
+            (entry.get("company", "") or "").lower().strip(),
+            (entry.get("job_title", "") or "").lower().strip(),
+        )
+
+        if key in sheet_lookup:
+            # Pull: update pipeline status from sheet
+            sheet_status = sheet_lookup[key]["status"].lower()
+            new_status = SHEET_TO_PIPELINE_STATUS.get(sheet_status, entry.get("status"))
+            if new_status != entry.get("status"):
+                entry["status"] = new_status
+                updated_count += 1
+            entry["tracker_synced"] = True
+            kept.append(entry)
+        elif entry.get("tracker_synced"):
+            # Was previously synced; sheet row was deleted by user → remove from pipeline
+            print(f"   ✗ Removed (deleted from sheet): {entry.get('company')} — {entry.get('job_title')}")
+            removed_count += 1
+        else:
+            # No prior sync flag → push to sheet for the first time
+            entry["tracker_synced"] = True
+            kept.append(entry)
+            new_rows.append([
+                entry.get("company", ""),
+                entry.get("job_title", ""),
+                "Queued",
+                "",
+                entry.get("url", ""),
+                entry.get("location", ""),
+            ])
+
+    # Write updated pipeline.json
+    with open(PIPELINE_FILE, "w") as f:
+        json.dump(kept, f, indent=2)
+
+    # Push new rows to Tracker
+    if new_rows:
+        sheets.values().append(
+            spreadsheetId=SHEET_ID,
+            range=f"{TAB_TRACKER}!A1",
+            valueInputOption="USER_ENTERED",
+            insertDataOption="INSERT_ROWS",
+            body={"values": new_rows}
+        ).execute()
+        _unformat_data_rows(sheets, get_sheet_ids(sheets)[TAB_TRACKER])
+        for row in new_rows:
+            print(f"   + {row[0]} — {row[1]}")
+
+    print(f"✅ Smart tracker sync complete:")
+    print(f"   Pull: {updated_count} status(es) updated from sheet, {removed_count} removed (deleted from sheet)")
+    print(f"   Push: {len(new_rows)} new row(s) added to Tracker")
 
 
 # ── Update Tracker Status ─────────────────────────────────────────────────────
@@ -858,6 +985,36 @@ def mark_skipped_posting(sheets, url):
     print(f"⚠ URL not found in {TAB_POSTINGS}: {url}")
 
 
+def update_postings_status_by_role(sheets, company, job_title, status):
+    """Set Job Postings column E status by company + job title match (for /jds evaluations without URLs).
+
+    Falls back to URL match if company+title not found.
+    Valid statuses: Evaluated, Skipped, Pending, Manual Retrieval.
+    """
+    result = sheets.values().get(
+        spreadsheetId=SHEET_ID, range=f"{TAB_POSTINGS}!A2:E"
+    ).execute()
+    rows = result.get("values", [])
+
+    for i, row in enumerate(rows):
+        if not row:
+            continue
+        row_company = row[1].strip().lower() if len(row) > 1 else ""
+        row_title   = row[2].strip().lower() if len(row) > 2 else ""
+        if row_company == company.lower() and row_title == job_title.lower():
+            row_num = i + 2
+            sheets.values().update(
+                spreadsheetId=SHEET_ID,
+                range=f"{TAB_POSTINGS}!E{row_num}",
+                valueInputOption="RAW",
+                body={"values": [[status]]}
+            ).execute()
+            print(f"✅ Job Postings status → {status}: {company} — {job_title}")
+            return
+
+    print(f"ℹ {company} — {job_title} not found in {TAB_POSTINGS} (not added via URL scan — no update needed).")
+
+
 def sync_postings_statuses(sheets):
     """Derive Job Postings status from pipeline.json tier — the canonical source of truth.
 
@@ -973,15 +1130,15 @@ def sync_qa(sheets, company, job_title, answers_json):
         answers.get("why_company", ""),
         answers.get("note_to_hiring_manager", ""),
         answers.get("additional_info", ""),
+        answers.get("why_this_industry", answers.get("why_public_markets", "")),
+        answers.get("comfort_zone_struggle", ""),
+        answers.get("most_impactful_project", ""),
+        answers.get("excites_you", ""),
+        answers.get("why_role_and_fit", ""),
+        answers.get("how_did_you_know_it_worked", ""),
     ]
 
-    # Find the next row number before appending so we can write the grayout formula
-    existing = sheets.values().get(
-        spreadsheetId=SHEET_ID, range=f"{TAB_QA}!A:A"
-    ).execute()
-    new_row_num = len(existing.get("values", [])) + 1  # 1-indexed; append lands here
-
-    sheets.values().append(
+    append_result = sheets.values().append(
         spreadsheetId=SHEET_ID,
         range=f"{TAB_QA}!A1",
         valueInputOption="RAW",
@@ -989,19 +1146,58 @@ def sync_qa(sheets, company, job_title, answers_json):
         body={"values": [row]}
     ).execute()
 
-    # Write COUNTIFS grayout formula to column J for the new row
-    tracker = f"'{TAB_TRACKER}'" if " " in TAB_TRACKER else TAB_TRACKER
-    formula = f'=COUNTIFS({tracker}!A:A,A{new_row_num},{tracker}!B:B,B{new_row_num},{tracker}!C:C,"<>Queued")>0'
-    sheets.values().update(
-        spreadsheetId=SHEET_ID,
-        range=f"{TAB_QA}!J{new_row_num}",
-        valueInputOption="USER_ENTERED",
-        body={"values": [[formula]]}
-    ).execute()
+    # Derive the actual row number from the API response — avoids off-by-one when
+    # column J has content beyond the last column-A row (e.g. from a manual drag).
+    updated_range = append_result.get("updates", {}).get("updatedRange", "")
+    match = re.search(r'(\d+):', updated_range)
+    actual_row_num = int(match.group(1)) if match else None
+    if actual_row_num is None:
+        print(f"⚠  Could not parse row number from append response: {updated_range!r}")
+    else:
+        # Write COUNTIFS grayout formula to column P ("Applied?") for the new row
+        tracker = f"'{TAB_TRACKER}'" if " " in TAB_TRACKER else TAB_TRACKER
+        formula = (
+            f'=COUNTIFS({tracker}!A:A,A{actual_row_num},'
+            f'{tracker}!B:B,B{actual_row_num},'
+            f'{tracker}!C:C,"<>Queued")>0'
+        )
+        sheets.values().update(
+            spreadsheetId=SHEET_ID,
+            range=f"{TAB_QA}!P{actual_row_num}",
+            valueInputOption="USER_ENTERED",
+            body={"values": [[formula]]}
+        ).execute()
 
     _unformat_data_rows(sheets, get_sheet_ids(sheets)[TAB_QA])
 
     print(f"✅ Q&A synced to Sheet 4 — {TAB_QA}: {company} — {job_title}")
+
+
+def fix_qa_formulas(sheets):
+    """Retroactively write the column-P ("Applied?") COUNTIFS formula to every Q&A data row."""
+    result = sheets.values().get(
+        spreadsheetId=SHEET_ID, range=f"{TAB_QA}!A:A"
+    ).execute()
+    values = result.get("values", [])
+    last_data_row = len(values)  # includes header at row 1
+
+    if last_data_row < 2:
+        print("ℹ  App Q&A has no data rows — nothing to fix.")
+        return
+
+    tracker = f"'{TAB_TRACKER}'" if " " in TAB_TRACKER else TAB_TRACKER
+    formulas = [
+        [f'=COUNTIFS({tracker}!A:A,A{row},{tracker}!B:B,B{row},{tracker}!C:C,"<>Queued")>0']
+        for row in range(2, last_data_row + 1)
+    ]
+    sheets.values().update(
+        spreadsheetId=SHEET_ID,
+        range=f"{TAB_QA}!P2:P{last_data_row}",
+        valueInputOption="USER_ENTERED",
+        body={"values": formulas}
+    ).execute()
+
+    print(f"✅ Q&A column P formulas written for {last_data_row - 1} data rows (rows 2–{last_data_row})")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -1014,7 +1210,8 @@ def main():
     parser.add_argument("--fix-pipeline-formatting",   action="store_true", help="Apply tier row colours to Pipeline sheet")
     parser.add_argument("--apply-submitted-grayout",   action="store_true", help="Grey out Pipeline rows where Tracker status is not Queued")
     parser.add_argument("--sync-pipeline",    action="store_true", help="Push evaluated roles to Sheet 2")
-    parser.add_argument("--sync-tracker",     action="store_true", help="Push applied roles to Sheet 1")
+    parser.add_argument("--smart-sync-tracker", action="store_true", help="Pull sheet → update pipeline.json, then push new rows to Sheet 1 (replaces --sync-tracker)")
+    parser.add_argument("--sync-tracker",     action="store_true", help="[deprecated] Push applied roles to Sheet 1 (use --smart-sync-tracker instead)")
     parser.add_argument("--get-pending-urls", action="store_true", help="Print pending URLs from Sheet 3")
     parser.add_argument("--mark-evaluated",   metavar="URL",       help="Mark URL as evaluated in Sheet 3")
     parser.add_argument("--update-status",    nargs=2, metavar=("URL", "STATUS"), help="Update Tracker status")
@@ -1022,8 +1219,12 @@ def main():
     parser.add_argument("--write-postings-formulas", action="store_true", help="Write live auto-status formula to Job Postings!E (Skipped/Evaluated derived from Pipeline tier)")
     parser.add_argument("--sync-postings-statuses", action="store_true", help="[deprecated] Manually sync Job Postings statuses from pipeline.json")
     parser.add_argument("--update-postings-dropdown", action="store_true", help="Push current POSTINGS_STATUSES to Job Postings dropdown")
+    parser.add_argument("--update-postings-status", nargs=3, metavar=("COMPANY", "TITLE", "STATUS"),
+                        help="Set Job Postings column E by company+title (for /jds roles without URLs). STATUS: Evaluated|Skipped")
     parser.add_argument("--sync-qa",          nargs=3, metavar=("COMPANY", "TITLE", "ANSWERS_JSON"),
                         help="Push application Q&A answers to Sheet 4")
+    parser.add_argument("--fix-qa-formulas",  action="store_true",
+                        help="Retroactively write column-J COUNTIFS formula to all Q&A data rows")
     args = parser.parse_args()
 
     sheets = get_service()
@@ -1041,6 +1242,8 @@ def main():
         apply_submitted_grayout(sheets)
     elif args.sync_pipeline:
         sync_pipeline(sheets)
+    elif args.smart_sync_tracker:
+        smart_sync_tracker(sheets)
     elif args.sync_tracker:
         sync_tracker(sheets)
     elif args.get_pending_urls:
@@ -1057,8 +1260,12 @@ def main():
         sync_postings_statuses(sheets)
     elif args.update_postings_dropdown:
         update_postings_dropdown(sheets)
+    elif args.update_postings_status:
+        update_postings_status_by_role(sheets, args.update_postings_status[0], args.update_postings_status[1], args.update_postings_status[2])
     elif args.sync_qa:
         sync_qa(sheets, args.sync_qa[0], args.sync_qa[1], args.sync_qa[2])
+    elif args.fix_qa_formulas:
+        fix_qa_formulas(sheets)
     else:
         parser.print_help()
 
