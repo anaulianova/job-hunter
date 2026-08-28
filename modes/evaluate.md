@@ -185,7 +185,13 @@ Next step: Review CV amendments above, update your CV, then run /track to log th
 ## Post-Evaluation Actions
 
 1. Save full report to `pipeline/reports/{company_slug}_{YYYY-MM-DD}.md`
-2. If the JD was loaded from a file in `jds/`: move the file to `jds/evaluated/` after evaluation completes. Use `mv jds/{filename} jds/evaluated/{filename}`. Do this even for UNSUITABLE/SKIP outcomes — the file has been processed regardless of result.
+2. **JD file cleanup — run once per batch, not once per file.** After the whole batch of evaluations is complete, run:
+   ```
+   uv run scripts/archive_jds.py
+   ```
+   This sweeps `jds/` and moves every file whose role now has a non-`discovered` entry in `pipeline.json` into `jds/evaluated/`, including UNSUITABLE/SKIP outcomes. Files it cannot match are left in place and listed, which is the signal that a role was never actually evaluated or that a filename does not match its company.
+
+   Run it as a sweep rather than moving files individually mid-evaluation. A per-file step has to be remembered N times and fails silently when it is not; the sweep is idempotent, so anything missed on one run is collected on the next. Use `--dry-run` to preview and `--file X` to move a single file by hand.
 3. Add/update entry in `pipeline/pipeline.json`:
 ```json
 {

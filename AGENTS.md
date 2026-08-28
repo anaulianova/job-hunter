@@ -295,6 +295,7 @@ This column is **one-directional and write-once**. A status is set at the moment
    - **JD fetch failed** → mark `Manual Retrieval`. Do not add to Pipeline yet.
    - **Page says the posting is filled/closed** → mark `Manual Retrieval`, NOT `Skipped`. A "this job has been filled" response is frequently wrong: careers sites serve stale caches, redirect between regional listings, and return filled-state pages to fetchers while the posting is still live and accepting applications. Never burn a write-once `Skipped` on a fetcher's word that a role is closed — ask the user to confirm from the live page first.
 3. For `Manual Retrieval` rows, the user saves the JD as a `.txt` file in `jds/` and asks for re-evaluation.
+   After the batch completes, run `uv run scripts/archive_jds.py` once to sweep processed files into `jds/evaluated/`. Do not move them one at a time during evaluation.
 4. Evaluate from the `jds/` file and add to Pipeline as Tier 1, 2, 3, or `skip`. The URL for the Pipeline entry comes from the Job Postings URL column — read it from the sheet, do not reconstruct it.
 5. Update the Job Postings status to `Evaluated` or `Skipped` per the outcome.
 
