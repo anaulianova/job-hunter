@@ -134,7 +134,7 @@ Works for most public job boards: Greenhouse, Lever, Ashby, and most company car
 ```
 
 **2. jds/ folder — for blocked pages**
-For LinkedIn, OpenAI, and any role where the URL does not load: open the job posting, select all the text, copy it, and save it as a `.txt` file in the `jds/` folder.
+For LinkedIn and any role where the URL does not load: open the job posting, select all the text, copy it, and save it as a `.txt` file in the `jds/` folder.
 ```
 jds/openai_researcher.txt
 ```
