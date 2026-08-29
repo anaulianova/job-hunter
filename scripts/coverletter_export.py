@@ -73,6 +73,13 @@ p {
 .closing {
     margin-top: 18pt;
 }
+
+/* Links. Without this rule anchors render as plain text and the PDF has no
+   clickable annotation. Matches the styling in cv_export.py. */
+a {
+    color: #111111;
+    text-decoration: underline;
+}
 """
 
 
