@@ -32,9 +32,12 @@ ALIASES = {
     "jpm": "jpmorgan chase", "jpmorgan": "jpmorgan chase",
     "bofa": "bank of america", "federal": "federal reserve bank of new york",
     "millenium": "millenium", "millennium": "millenium",
-    "ms": "morgan stanley", "rbc": "rbc", "bcgx": "bcg x",
+    "ms": "morgan stanley", "rbc": "rbc", "bcgx": "bcg x", "bcg": "bcg",
     "oxford": "oxford knight", "oliver": "oliver bernard",
     "dow": "dow jones", "state": "state street",
+    # Abbreviated prefixes. Filenames often use an initialism the pipeline does not.
+    "db": "deutsche bank", "gs": "goldman sachs", "s p": "s p global", "sp": "s p global",
+    "bofaml": "bank of america", "spglobal": "s p global",
 }
 
 
@@ -68,8 +71,10 @@ def match(name: str, companies: set[str]) -> str | None:
         cand = ALIASES.get(cand, cand)
         if cand in companies:
             return cand
+        # Prefix match as a fallback. Requires 4+ chars so short initialisms do not
+        # collide (e.g. "ms" must resolve via ALIASES, not by prefixing "mastercard").
         for c in companies:
-            if c.startswith(cand) and len(cand) >= 4:
+            if c.startswith(cand) and len(cand.replace(" ", "")) >= 4:
                 return c
     return None
 
