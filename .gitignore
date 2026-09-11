@@ -1,6 +1,8 @@
 # job-hunter: personal data — never commit
 cv.md
-profile/user_profile.json
+# Everything personal to the user lives under profile/ — ignore the directory,
+# not individual files, so a new private context file is never accidentally tracked.
+profile/
 config/google_creds.json
 pipeline/pipeline.json
 pipeline/scan_log.json
