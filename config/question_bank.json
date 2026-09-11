@@ -33,7 +33,7 @@
         "3": "standard"
       },
       "boilerplate": null,
-      "notes": "Must reference something specific to THIS company — a product, a recent shift in what they sell, a market position, a specific team. Never generic ('fast-growing company', 'exciting space'). 3-4 sentences max. ⚠ THE ANSWER MUST BE ABOUT THE COMPANY, NOT ABOUT HER. A common failure is writing a fit answer here: listing her own skills and experience and never actually naming why this company, now. If the answer would still make sense with the company name swapped out, it is wrong. Her background belongs in why_role_and_fit; this question is 'why you, this company, and why now'. For Tier 1: ask the user what angle they want before generating."
+      "notes": "Must reference something specific to THIS company — a product, a recent shift in what they sell, a market position, a specific team. Never generic ('fast-growing company', 'exciting space'). 3-4 sentences max. ⚠ THE ANSWER MUST BE ABOUT THE COMPANY, NOT ABOUT THE CANDIDATE. A common failure is writing a fit answer here: listing the user's own skills and experience and never actually naming why this company, now. If the answer would still make sense with the company name swapped out, it is wrong. The user's background belongs in why_role_and_fit; this question is 'why you, this company, and why now'. For Tier 1: ask the user what angle they want before generating."
     },
     {
       "id": "note_to_hiring_manager",
@@ -77,7 +77,7 @@
         "3": "personalise"
       },
       "boilerplate": null,
-      "notes": "250 word limit. ⚠ This question is NOT about public markets investing. It asks why she is drawn to THIS COMPANY'S industry or domain, and the question must be re-pointed per application before it is answered: 'Why AI audio?' for a voice AI company, 'Why marketplaces?' for a marketplace, 'Why payments?' for a payments company, 'Why public markets investing?' only when the company actually is an investment firm. Never answer a markets question at a non-markets company and never open with a disclaimer that her background is in markets rather than the asked domain — that answers the wrong question and reads as a deflection. Draw the genuine thread from her background INTO that industry rather than apologising for the distance. Always ask_user at Tier 1 and 2 for the angle."
+      "notes": "250 word limit. ⚠ This question asks why the user is drawn to THIS COMPANY'S industry or domain, and must be re-pointed per application before it is answered: 'Why AI audio?' for a voice AI company, 'Why marketplaces?' for a marketplace, 'Why payments?' for a payments company. Never answer it as though it were about the user's own prior domain, and never open with a disclaimer that the user's background is in a different field than the one asked about — that answers the wrong question and reads as a deflection. Draw the genuine thread from the user's background INTO that industry rather than apologising for the distance. Always ask_user at Tier 1 and 2 for the angle."
     },
     {
       "id": "comfort_zone_struggle",
@@ -99,7 +99,7 @@
         "3": "standard"
       },
       "boilerplate": null,
-      "notes": "Default to the user's most significant 0-to-1 build (see `profile.proudest_achievement`) unless a different project fits the JD better. Three requirements at every tier: (1) ADAPT the description of the project so it echoes the JD — lead with the facet of the build that matches what this role actually does, not a generic summary of the project. (2) STATE THE SPECIFIC CONTRIBUTION — what she personally designed, built or decided, not what 'the team' or 'the company' did. As a solo founder this is nearly everything, but name the parts rather than implying scale she did not have. (3) GIVE SUCCESS OR OUTCOME CRITERIA that show impact — what changed, who paid, what it survived, what it replaced. Use only verifiable facts (e.g. closed a national regulator as a paying client; converted a judgment-based process into a documented framework). Never invent metrics, percentages or revenue figures. If the honest outcome is mixed, say so — If the venture ended, that is defensible when framed as what the build proved rather than what the company became. 4-6 sentences."
+      "notes": "Default to the user's most significant 0-to-1 build (see `profile.proudest_achievement`) unless a different project fits the JD better. Three requirements at every tier: (1) ADAPT the description of the project so it echoes the JD — lead with the facet of the build that matches what this role actually does, not a generic summary of the project. (2) STATE THE SPECIFIC CONTRIBUTION — what the user personally designed, built or decided, not what 'the team' or 'the company' did. Name the parts rather than implying scale the user did not have. (3) GIVE SUCCESS OR OUTCOME CRITERIA that show impact — what changed, who paid, what it survived, what it replaced. Use only verifiable facts. Never invent metrics, percentages or revenue figures. If the honest outcome is mixed, say so — if a venture ended, that is defensible when framed as what the build proved rather than what the company became. 4-6 sentences."
     },
     {
       "id": "how_did_you_know_it_worked",
@@ -110,7 +110,7 @@
         "3": "standard"
       },
       "boilerplate": null,
-      "notes": "Follow-up to most_impactful_project and must reference the SAME project. Give the evidence that the build worked, not a restatement of what it was. Use only verifiable facts: who paid, what it survived, what it replaced, what test she set herself. NEVER invent metrics, percentages, revenue, user counts or time savings — she has no quantified outcomes and fabricating them is the fastest way to lose an interview. The strongest available evidence is usually a demanding client who scrutinised the work before buying it, which is adversarial validation rather than a testimonial. Always include the honest counterweight that the company did not survive; it costs nothing and buys credibility for everything else in the answer. 5-8 sentences."
+      "notes": "Follow-up to most_impactful_project and must reference the SAME project. Give the evidence that the build worked, not a restatement of what it was. Use only verifiable facts: who paid, what it survived, what it replaced, what test the user set themselves. NEVER invent metrics, percentages, revenue, user counts or time savings — fabricating them is the fastest way to lose an interview. Check `profile/context_rules.md` for what evidence is actually available and which claims about clients are off-limits, and stay inside it. Where the honest outcome includes a setback, include it; it costs nothing and buys credibility for everything else in the answer. 5-8 sentences."
     },
     {
       "id": "additional_info",

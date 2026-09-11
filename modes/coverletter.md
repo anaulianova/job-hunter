@@ -163,7 +163,7 @@ uv run scripts/coverletter_export.py --company {company-slug} --date {date}
 
 Output PDF: `app/coverletter/pdf/cover_{company-slug}_{date}.pdf`
 
-Confirm: "Cover letter saved and exported. Rename to `Cover_Letter_Anastasia_Ulianova.pdf` before uploading."
+Confirm: "Cover letter saved and exported. Rename to `Cover_Letter_{FirstName}_{LastName}.pdf` before uploading."
 
 ---
 
