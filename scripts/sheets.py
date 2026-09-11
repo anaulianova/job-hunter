@@ -623,8 +623,11 @@ def sync_pipeline(sheets):
     for e in evaluated:
         row_data = [str(e.get(col, "") or "") for col in PIPELINE_COLS]
         url = e.get("url", "") or ""
-        company = (e.get("company", "") or "").lower()
-        title = (e.get("job_title", "") or "").lower()
+        # .strip() must mirror the sheet-side keys built above. Without it a pipeline
+        # title carrying a stray trailing space never matches its own row and appends
+        # a duplicate on every sync.
+        company = (e.get("company", "") or "").strip().lower()
+        title = (e.get("job_title", "") or "").strip().lower()
 
         if url and url.startswith("http") and url in url_to_row:
             updates.append((url_to_row[url], row_data))
@@ -1137,6 +1140,30 @@ def sync_qa(sheets, company, job_title, answers_json):
         answers.get("why_role_and_fit", ""),
         answers.get("how_did_you_know_it_worked", ""),
     ]
+
+    # Upsert: if this (company, job_title) already has a row, overwrite it in place.
+    # Appending unconditionally silently duplicated every re-synced role.
+    existing = sheets.values().get(
+        spreadsheetId=SHEET_ID, range=f"{TAB_QA}!A2:B"
+    ).execute().get("values", [])
+    target_row = None
+    for n, ex in enumerate(existing):
+        ex_co = (ex[0].strip() if len(ex) > 0 else "").lower()
+        ex_ti = (ex[1].strip() if len(ex) > 1 else "").lower()
+        if ex_co == company.strip().lower() and ex_ti == job_title.strip().lower():
+            target_row = n + 2
+            break
+
+    if target_row:
+        sheets.values().update(
+            spreadsheetId=SHEET_ID,
+            range=f"{TAB_QA}!A{target_row}:O{target_row}",
+            valueInputOption="RAW",
+            body={"values": [row]},
+        ).execute()
+        print(f"\u2705 Q&A updated in place (row {target_row}) \u2014 {company}: {job_title}")
+        return
+
 
     append_result = sheets.values().append(
         spreadsheetId=SHEET_ID,
