@@ -307,7 +307,7 @@ Statuses: `discovered` → `evaluated` → `cv_tailored` → `applied` → `scre
 
 `Hold` = prepared but deliberately not submitted yet, because something external has to happen first: a referral being arranged, a portfolio piece being built to close a stated requirement, or an earlier application at the same company still outstanding. Always record the unblock condition in the Tracker `Notes` column so the reason survives the session. Hold highlights the whole row yellow. It is not a dead end: revisit these when the blocking condition clears.
 
-`Queued` = application prepared by job-hunter, not yet submitted by user. Rows land here automatically after `/apply`. User updates to `Sent` manually after submitting the application form, or by saying "mark [company] as sent".
+`Queued` = application prepared by job-hunter, not yet submitted by user. Rows land here automatically after `/apply`, and also as soon as a role reaches `cv_tailored` — a tailored CV is a prepared application whether or not `/apply` ran. Run `--smart-sync-tracker` after generating any CV, not only at the end of `/apply`. User updates to `Sent` manually after submitting the application form, or by saying "mark [company] as sent".
 
 ### Job Postings sheet statuses (Sheet 3)
 

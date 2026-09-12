@@ -780,8 +780,17 @@ def smart_sync_tracker(sheets):
     removed_count = 0
 
     for entry in pipeline:
-        # Only manage entries that have reached application stage
-        if entry.get("application_date") is None:
+        # Only manage entries that have reached application stage.
+        # `Queued` means "prepared by job-hunter, not yet submitted", which is the
+        # cv_tailored state and has no application_date yet. Gating on
+        # application_date alone meant a tailored CV never reached the Tracker at
+        # all, so a prepared application could sit in the pipeline invisibly.
+        ready = (
+            entry.get("application_date") is not None
+            or entry.get("status") in ("cv_tailored", "applied")
+            or entry.get("cv_version")
+        )
+        if not ready:
             kept.append(entry)
             continue
 
