@@ -130,7 +130,7 @@ Accuracy always beats the reviewer's judgement on relevance. Keep the reviewer's
 Do not show the answers to the user before syncing. Run silently:
 
 1. Call `uv run scripts/sheets.py --sync-qa "[company]" "[job_title]" "[answers_json]"` to push answers to Sheet 4
-2. Update `pipeline.json` status → `applied`, set `application_date` to today
+2. Update `pipeline.json` status → `cv_tailored`. Leave `application_date` null — `/apply` prepares the application, it does not submit it. The status becomes `applied` only when the user marks the Tracker row `Sent`.
 3. Call `uv run scripts/sheets.py --smart-sync-tracker` to sync Sheet 1 (pulls sheet → json, then pushes new row as `Queued`)
 
 The Tracker row lands as **Queued** (turquoise). The user fills out and submits the application manually, then updates the status to **Sent** — either by editing the dropdown in the sheet directly, or by asking: "mark [company] as sent".
@@ -185,7 +185,7 @@ For each selected role, run silently:
 3. Spawn isolated reviewer (Step 2b) — pass only JD + answers, no profile
 4. Apply reviewer revisions
 5. Sync answers to Sheet 4: `uv run scripts/sheets.py --sync-qa ...`
-6. Update `pipeline.json` status → `applied`, set `application_date` to today
+6. Update `pipeline.json` status → `cv_tailored`. Leave `application_date` null — see Step 3; only a `Sent` Tracker row makes a role `applied`.
 7. Sync to Sheet 1: `uv run scripts/sheets.py --smart-sync-tracker` — new row lands as `Queued`; also pulls any sheet deletions back into pipeline.json
 
 Do not pause for confirmation between roles.

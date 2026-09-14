@@ -62,8 +62,13 @@ SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 # ── Column definitions ────────────────────────────────────────────────────────
 
 TRACKER_HEADERS  = ["Company", "Job Title", "Status", "Application Date", "URL", "Location", "Notes"]
+# Tracker is the source of truth for whether an application was actually sent.
+# "Queued" and "Hold" both mean prepared-but-not-submitted, so they map to
+# cv_tailored, never applied. Mapping queued -> applied silently marked every
+# prepared application as sent and hid unsent work from the pipeline.
 SHEET_TO_PIPELINE_STATUS = {
-    "queued":           "applied",
+    "queued":           "cv_tailored",
+    "hold":             "cv_tailored",
     "sent":             "applied",
     "first screening":  "screening",
     "interview":        "interview",
