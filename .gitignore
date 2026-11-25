@@ -19,6 +19,7 @@ app/cv/record/*
 app/cv/pdf/*
 app/coverletter/record/*
 app/coverletter/pdf/*
+app/interview/
 jds/*
 !app/cv/record/.gitkeep
 !app/cv/pdf/.gitkeep
@@ -26,6 +27,7 @@ jds/*
 !app/coverletter/pdf/.gitkeep
 !jds/.gitkeep
 config/targets.yml
+scripts/reconcile_notion_sheet.py
 
 # Secrets
 .env
